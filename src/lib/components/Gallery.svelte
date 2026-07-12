@@ -1,16 +1,43 @@
 <script lang="ts">
-	import { GALLERY, TONES } from '$lib/config';
+	import { COUPLE, GALLERY, TONES } from '$lib/config';
 	import { cornerIvy } from '$lib/ivy';
-	import { reveal } from '$lib/reveal';
 	import SectionHead from './SectionHead.svelte';
 
+	let flipped = $state(GALLERY.map(() => false));
+	let gridEl = $state<HTMLDivElement>();
 	let lightbox = $state<number | null>(null);
-	let dialog: HTMLDialogElement | undefined = $state();
+	let dialog = $state<HTMLDialogElement>();
 
-	function openAt(i: number) {
-		if (!GALLERY[i].src) return; // placeholders don't need a lightbox
-		lightbox = i;
-		dialog?.showModal();
+	// deal the cards: flip face-up one by one when the wall scrolls into view
+	$effect(() => {
+		if (!gridEl) return;
+		const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		let timers: ReturnType<typeof setTimeout>[] = [];
+		const io = new IntersectionObserver(
+			(entries) => {
+				if (entries.some((e) => e.isIntersecting)) {
+					io.disconnect();
+					GALLERY.forEach((_, i) => {
+						timers.push(setTimeout(() => (flipped[i] = true), reduced ? 0 : 250 + i * 170));
+					});
+				}
+			},
+			{ threshold: 0.2 }
+		);
+		io.observe(gridEl);
+		return () => {
+			io.disconnect();
+			timers.forEach(clearTimeout);
+		};
+	});
+
+	function tap(i: number) {
+		if (flipped[i] && GALLERY[i].src) {
+			lightbox = i;
+			dialog?.showModal();
+		} else {
+			flipped[i] = !flipped[i];
+		}
 	}
 	function close() {
 		lightbox = null;
@@ -26,6 +53,34 @@
 	}
 </script>
 
+{#snippet cardInner(i: number)}
+	<button
+		class="flip"
+		aria-label={flipped[i] ? `View photo: ${GALLERY[i].caption}` : `Turn card ${i + 1} over`}
+		aria-pressed={flipped[i]}
+		onclick={() => tap(i)}
+	>
+		<span class="flip-inner" class:up={flipped[i]}>
+			<span class="face back arch" aria-hidden="true">
+				<span class="back-frame"></span>
+				<span class="back-fleuron top">❦</span>
+				<span class="back-mono">{COUPLE.monogram[0]}<em>&amp;</em>{COUPLE.monogram[1]}</span>
+				<span class="back-fleuron">❦</span>
+			</span>
+			<span
+				class="face front arch"
+				style={GALLERY[i].src ? '' : `background:${TONES[GALLERY[i].tone]}`}
+			>
+				{#if GALLERY[i].src}
+					<img src={GALLERY[i].src} alt={GALLERY[i].caption} loading="lazy" />
+				{:else}
+					<span class="photo-note">photo {String(i + 1).padStart(2, '0')}</span>
+				{/if}
+			</span>
+		</span>
+	</button>
+{/snippet}
+
 <svelte:window
 	onkeydown={(e) => {
 		if (lightbox === null) return;
@@ -40,40 +95,18 @@
 			eyebrow="Gallery"
 			title="The two of us"
 			seed={12}
-			lede="Our engagement photos as a colonnade — arch-topped frames along a garden wall."
+			lede="Our engagement photos, dealt like cards along a garden wall — turn them over."
 		/>
-		<div class="gallery-grid" use:reveal>
+		<div class="gallery-grid" bind:this={gridEl}>
 			{#each GALLERY as photo, i (i)}
 				{#if i % 3 === 1}
 					<figure class="g-frame arch" class:tall={photo.tall} use:cornerIvy={{ seed: 60 + i }}>
-						<button
-							class="g-hit"
-							onclick={() => openAt(i)}
-							aria-label="View photo: {photo.caption}"
-							style={photo.src ? '' : `background:${TONES[photo.tone]}`}
-						>
-							{#if photo.src}
-								<img src={photo.src} alt={photo.caption} loading="lazy" />
-							{:else}
-								<span class="photo-note">photo {String(i + 1).padStart(2, '0')}</span>
-							{/if}
-						</button>
+						{@render cardInner(i)}
 						<figcaption class="g-caption"><i>{photo.caption}</i></figcaption>
 					</figure>
 				{:else}
 					<figure class="g-frame arch" class:tall={photo.tall}>
-						<button
-							class="g-hit"
-							onclick={() => openAt(i)}
-							aria-label="View photo: {photo.caption}"
-							style={photo.src ? '' : `background:${TONES[photo.tone]}`}
-						>
-							{#if photo.src}
-								<img src={photo.src} alt={photo.caption} loading="lazy" />
-							{:else}
-								<span class="photo-note">photo {String(i + 1).padStart(2, '0')}</span>
-							{/if}
-						</button>
+						{@render cardInner(i)}
 						<figcaption class="g-caption"><i>{photo.caption}</i></figcaption>
 					</figure>
 				{/if}
@@ -108,6 +141,7 @@
 		outline: 1px solid rgba(230, 217, 198, 0.09);
 		outline-offset: 5px;
 		box-shadow: 0 18px 44px rgba(0, 0, 0, 0.4);
+		aspect-ratio: 3 / 3.9;
 	}
 	.g-frame:nth-child(3n + 2) {
 		margin-bottom: 4rem;
@@ -115,35 +149,90 @@
 	.g-frame:nth-child(3n) {
 		margin-bottom: 3rem;
 	}
-	.g-frame {
-		aspect-ratio: 3 / 3.9;
-	}
 	.g-frame.tall {
 		aspect-ratio: 3 / 4.4;
 	}
-	.g-hit {
+
+	/* ---- the card flip ---- */
+	.flip {
 		position: absolute;
 		inset: 0;
 		border: none;
 		padding: 0;
+		background: none;
 		cursor: pointer;
+		perspective: 1100px;
+	}
+	.flip-inner {
+		position: absolute;
+		inset: 0;
+		transform-style: preserve-3d;
+		transition: transform 0.85s cubic-bezier(0.35, 0.1, 0.2, 1);
+	}
+	.flip-inner.up {
+		transform: rotateY(180deg);
+	}
+	.face {
+		position: absolute;
+		inset: 0;
+		backface-visibility: hidden;
+		-webkit-backface-visibility: hidden;
+		overflow: hidden;
 		display: grid;
 		place-items: center;
-		overflow: hidden;
-		border-radius: inherit;
-		background: transparent;
 	}
-	.g-hit img {
+	.face.front {
+		transform: rotateY(180deg);
+	}
+	.face.front img {
 		position: absolute;
 		inset: 0;
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
-		transition: transform 0.8s ease;
 	}
-	.g-hit:hover img {
-		transform: scale(1.02);
+
+	/* engraved parchment card back */
+	.face.back {
+		background:
+			radial-gradient(ellipse 120% 60% at 50% -10%, rgba(255, 255, 255, 0.3), transparent 60%),
+			linear-gradient(160deg, var(--parchment) 0%, var(--parchment-deep) 100%);
+		display: grid;
+		grid-template-rows: auto 1fr auto;
+		justify-items: center;
+		align-items: center;
+		padding: 18% 0;
 	}
+	.back-frame {
+		position: absolute;
+		inset: 9px;
+		border: 1px solid rgba(58, 36, 32, 0.4);
+		border-radius: inherit;
+	}
+	.back-frame::after {
+		content: '';
+		position: absolute;
+		inset: 5px;
+		border: 1px solid rgba(58, 36, 32, 0.22);
+		border-radius: inherit;
+	}
+	.back-mono {
+		font-family: var(--display);
+		font-size: clamp(1.8rem, 5vw, 2.6rem);
+		color: rgba(58, 36, 32, 0.55);
+		letter-spacing: 0.04em;
+	}
+	.back-mono em {
+		font-style: italic;
+		color: rgba(106, 74, 80, 0.75);
+		font-size: 0.55em;
+		vertical-align: 0.35em;
+	}
+	.back-fleuron {
+		color: rgba(106, 74, 80, 0.6);
+		font-size: 0.85rem;
+	}
+
 	.photo-note {
 		font-size: 0.62rem;
 		letter-spacing: 0.28em;
