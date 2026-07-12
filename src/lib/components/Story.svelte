@@ -4,10 +4,12 @@
 	import MirrorFrame from './MirrorFrame.svelte';
 	import SectionHead from './SectionHead.svelte';
 
-	// scroll progress per chapter (0 → entering, 1 → read) drives the
-	// storybook: plates turn, photos drift, the binding stem fills in
+	// Each chapter is a tall scroll region with its content pinned (sticky)
+	// inside: the page keeps scrolling but the chapter holds still while the
+	// reader's scroll pages through its photos — then it releases.
+	// progress[i] = how far through chapter i's pinned range we've scrolled.
 	let progress = $state<number[]>(CHAPTERS.map(() => 0));
-	let chapterEls: HTMLElement[] = [];
+	let stageEls: HTMLElement[] = [];
 	let reduced = $state(false);
 
 	$effect(() => {
@@ -16,13 +18,14 @@
 		const measure = () => {
 			raf = 0;
 			const vh = window.innerHeight;
-			const next = chapterEls.map((el) => {
+			const next = stageEls.map((el) => {
 				if (!el) return 0;
 				const rect = el.getBoundingClientRect();
-				const p = (vh * 0.8 - rect.top) / (rect.height + vh * 0.4);
+				const travel = rect.height - vh;
+				const p = travel > 0 ? -rect.top / travel : (vh * 0.8 - rect.top) / rect.height;
 				return Math.min(1, Math.max(0, p));
 			});
-			if (next.some((p, i) => Math.abs(p - progress[i]) > 0.005)) progress = next;
+			if (next.some((p, i) => Math.abs(p - progress[i]) > 0.004)) progress = next;
 		};
 		const onScroll = () => {
 			if (!raf) raf = requestAnimationFrame(measure);
@@ -45,33 +48,32 @@
 		{#each CHAPTERS as chapter, i (chapter.numeral)}
 			{#if i > 0}
 				<div class="binding" aria-hidden="true">
-					<span
-						class="stem"
-						style="transform: scaleY({Math.min(1, progress[i] * 2.2)})"
-					></span>
-					<i class="bud" class:lit={progress[i] > 0.12}>❦</i>
+					<span class="stem" style="transform: scaleY({Math.min(1, progress[i] * 3)})"></span>
+					<i class="bud" class:lit={progress[i] > 0.05}>❦</i>
 				</div>
 			{/if}
 			<article
-				class="chapter"
-				class:rev={i % 2 === 1}
-				bind:this={chapterEls[i]}
-				style="--p:{reduced ? 0.5 : progress[i]}"
-				use:reveal
+				class="stage"
+				bind:this={stageEls[i]}
+				style="--extra:{chapter.plates.length * 55}vh"
 			>
-				<div class="ch-photo">
-					<MirrorFrame
-						plates={chapter.plates}
-						alt={chapter.title}
-						ivy={i !== 1}
-						seed={41 + i}
-						progress={progress[i]}
-					/>
-				</div>
-				<div class="story-copy">
-					<div class="ch-num">{chapter.numeral}</div>
-					<h3>{chapter.title}</h3>
-					<p class="drop">{chapter.body}</p>
+				<div class="pin">
+					<div class="chapter" class:rev={i % 2 === 1} style="--p:{reduced ? 0.5 : progress[i]}" use:reveal>
+						<div class="ch-photo">
+							<MirrorFrame
+								plates={chapter.plates}
+								alt={chapter.title}
+								ivy={i !== 1}
+								seed={41 + i}
+								progress={progress[i]}
+							/>
+						</div>
+						<div class="story-copy">
+							<div class="ch-num">{chapter.numeral}</div>
+							<h3>{chapter.title}</h3>
+							<p class="drop">{chapter.body}</p>
+						</div>
+					</div>
 				</div>
 			</article>
 		{/each}
@@ -89,12 +91,28 @@
 	.story {
 		background: linear-gradient(180deg, var(--espresso), #291b15 50%, var(--espresso));
 	}
+
+	/* tall scroll region; content pins inside while photos page through */
+	.stage {
+		height: calc(100vh + var(--extra, 110vh));
+		height: calc(100svh + var(--extra, 110vh));
+	}
+	.pin {
+		position: sticky;
+		top: 0;
+		min-height: 100vh;
+		min-height: 100svh;
+		display: flex;
+		align-items: center;
+		padding: 4rem 0 2.5rem;
+	}
+
 	.chapter {
+		width: 100%;
 		display: grid;
 		grid-template-columns: 0.85fr 1.15fr;
 		gap: clamp(2rem, 5vw, 4rem);
 		align-items: center;
-		padding: clamp(2rem, 5vw, 3.5rem) 0;
 	}
 	.chapter.rev .ch-photo {
 		order: 2;
@@ -102,6 +120,7 @@
 	@media (max-width: 760px) {
 		.chapter {
 			grid-template-columns: 1fr;
+			gap: 1.6rem;
 		}
 		.chapter.rev .ch-photo {
 			order: 0;
@@ -111,9 +130,14 @@
 		max-width: 340px;
 		width: 100%;
 		margin: 0 auto;
-		/* gentle parallax drift as the chapter scrolls through */
-		transform: translateY(calc((0.5 - var(--p, 0.5)) * 34px));
+		/* slight drift while the chapter is pinned */
+		transform: translateY(calc((0.5 - var(--p, 0.5)) * 26px));
 		will-change: transform;
+	}
+	@media (max-width: 760px) {
+		.ch-photo {
+			max-width: min(300px, 72vw);
+		}
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.ch-photo {
@@ -127,10 +151,11 @@
 		justify-items: center;
 		gap: 0.4rem;
 		height: 4.6rem;
+		position: relative;
+		z-index: 1;
 	}
 	.stem {
 		width: 1px;
-		flex: 1;
 		height: 3rem;
 		background: linear-gradient(180deg, transparent, var(--mauve), var(--olive));
 		transform-origin: top;
@@ -216,6 +241,12 @@
 		align-items: center;
 		gap: 1.2rem 1.8rem;
 		flex-wrap: wrap;
+	}
+	@media (max-width: 560px) {
+		.timeline {
+			flex-direction: column;
+			gap: 0.9rem;
+		}
 	}
 	.t-item {
 		text-align: center;

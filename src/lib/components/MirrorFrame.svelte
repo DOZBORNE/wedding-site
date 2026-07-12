@@ -26,10 +26,10 @@
 		setTimeout(() => (shimmer = false), 650);
 	}
 
-	// scroll-driven page turning: the chapter's scroll progress selects the
-	// plate, unless the reader turned it by hand in the last few seconds
+	// scroll-driven page turning: the pinned chapter's scroll progress selects
+	// the plate evenly, unless the reader turned it by hand in the last few seconds
 	const scrollTarget = $derived(
-		progress < 0 ? -1 : Math.min(plates.length - 1, Math.floor(progress * plates.length * 1.2))
+		progress < 0 ? -1 : Math.min(plates.length - 1, Math.floor(progress * plates.length))
 	);
 	$effect(() => {
 		if (scrollTarget >= 0 && Date.now() - lastUserTurn > 3500) swapTo(scrollTarget);
