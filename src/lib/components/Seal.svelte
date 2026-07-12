@@ -86,23 +86,23 @@
 		cy="60"
 		r="28.5"
 		fill="none"
-		stroke="rgba(240,222,196,0.3)"
+		stroke="rgba(240,222,196,0.42)"
 		stroke-width="1"
 		stroke-dasharray="1.5 3.5"
 	/>
 
-	<!-- embossed monogram: dark impression with a light bottom edge -->
+	<!-- monogram in raised relief: cream where the light catches, shadow beneath -->
 	<g
 		font-family="Didot, 'Bodoni 72', 'Bodoni Moda', Georgia, serif"
 		font-style="italic"
 		font-size="30"
 		text-anchor="middle"
 	>
-		<text x="60" y="71.5" fill="rgba(240,222,196,0.28)">{mono}</text>
-		<text x="60" y="70" fill="#1d0609">{mono}</text>
+		<text x="60.5" y="71.6" fill="rgba(16,4,6,0.65)">{mono}</text>
+		<text x="60" y="70" fill="#EDDFC6" opacity="0.95">{mono}</text>
 	</g>
 	<!-- tiny fleuron beneath -->
-	<text x="60" y="84" text-anchor="middle" font-size="8" fill="rgba(240,222,196,0.35)">❦</text>
+	<text x="60" y="84" text-anchor="middle" font-size="8" fill="rgba(240,222,196,0.55)">❦</text>
 
 	<!-- specular highlights where the wax still shines -->
 	<ellipse cx="41" cy="29" rx="13" ry="6.5" fill="#fff" opacity="0.13" transform="rotate(-24 41 29)" />
