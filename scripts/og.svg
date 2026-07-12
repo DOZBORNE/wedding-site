@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2A1418"/>
+      <stop offset="0.55" stop-color="#381015"/>
+      <stop offset="1" stop-color="#241014"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.32" r="0.55">
+      <stop offset="0" stop-color="#C99F94" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#C99F94" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="oliveGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#4B5A3A" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#4B5A3A" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="mauveGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#6A4A50" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#6A4A50" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="stone" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#B3A283"/>
+      <stop offset="0.42" stop-color="#E5D7BC"/>
+      <stop offset="1" stop-color="#A69575"/>
+    </linearGradient>
+    <radialGradient id="archFill" cx="0.5" cy="0.25" r="0.9">
+      <stop offset="0" stop-color="#503036"/>
+      <stop offset="0.6" stop-color="#3A2027"/>
+      <stop offset="1" stop-color="#2C1519"/>
+    </radialGradient>
+
+    <!-- ivy leaf -->
+    <path id="leaf" d="M0 0 C -1.5 -1 -4.5 -1.5 -5 -4.5 C -5.3 -6.5 -3.5 -8 -1.8 -7.6 C -1.6 -9.4 1.6 -9.4 1.8 -7.6 C 3.5 -8 5.3 -6.5 5 -4.5 C 4.5 -1.5 1.5 -1 0 0 Z"/>
+
+    <!-- cream ionic column, 80x460 -->
+    <g id="column">
+      <g stroke="rgba(58,36,32,0.55)" stroke-width="1">
+        <rect x="4" y="6" width="72" height="9" fill="#D5C5A7"/>
+        <rect x="12" y="15" width="56" height="18" fill="url(#stone)"/>
+        <g fill="none">
+          <circle cx="15" cy="26" r="10.5"/><circle cx="15" cy="26" r="6"/>
+          <circle cx="15" cy="26" r="2.5" fill="rgba(58,36,32,0.45)"/>
+          <circle cx="65" cy="26" r="10.5"/><circle cx="65" cy="26" r="6"/>
+          <circle cx="65" cy="26" r="2.5" fill="rgba(58,36,32,0.45)"/>
+        </g>
+        <rect x="18" y="33" width="44" height="7" fill="#C4B394"/>
+        <rect x="22" y="40" width="36" height="5" fill="#D5C5A7"/>
+        <rect x="21" y="45" width="38" height="360" fill="url(#stone)"/>
+        <g stroke="rgba(58,36,32,0.4)">
+          <line x1="29" y1="49" x2="29" y2="401"/><line x1="37" y1="49" x2="37" y2="401"/>
+          <line x1="45" y1="49" x2="45" y2="401"/><line x1="53" y1="49" x2="53" y2="401"/>
+        </g>
+        <g stroke="rgba(255,248,235,0.5)">
+          <line x1="31" y1="49" x2="31" y2="401"/><line x1="39" y1="49" x2="39" y2="401"/>
+          <line x1="47" y1="49" x2="47" y2="401"/><line x1="55" y1="49" x2="55" y2="401"/>
+        </g>
+        <rect x="17" y="405" width="46" height="8" fill="#D5C5A7"/>
+        <rect x="11" y="413" width="58" height="10" fill="url(#stone)"/>
+        <rect x="5" y="423" width="70" height="12" fill="#C4B394"/>
+        <rect x="1" y="435" width="78" height="10" fill="#D5C5A7"/>
+      </g>
+    </g>
+  </defs>
+
+  <!-- ground -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <circle cx="-40" cy="-30" r="360" fill="url(#oliveGlow)"/>
+  <circle cx="1240" cy="660" r="380" fill="url(#mauveGlow)"/>
+
+  <!-- columns flanking the arch -->
+  <use href="#column" transform="translate(392 158) scale(0.72)"/>
+  <use href="#column" transform="translate(750 158) scale(0.72)"/>
+
+  <!-- the arch -->
+  <path d="M 480 490 L 480 250 A 120 130 0 0 1 720 250 L 720 490 Z"
+        fill="url(#archFill)" stroke="rgba(232,220,200,0.65)" stroke-width="2.5"/>
+  <path d="M 468 502 L 468 248 A 132 142 0 0 1 732 248 L 732 502"
+        fill="none" stroke="rgba(232,220,200,0.22)" stroke-width="1.5"/>
+
+  <!-- monogram in the arch -->
+  <text x="600" y="352" text-anchor="middle" font-family="Didot, Bodoni 72, Georgia, serif"
+        font-size="104" fill="#E8DCC8">D<tspan font-style="italic" font-size="56" fill="#C99F94" dy="-28">&amp;</tspan><tspan dy="28">J</tspan></text>
+  <text x="600" y="415" text-anchor="middle" font-family="Georgia, serif"
+        font-size="17" letter-spacing="7" fill="rgba(232,220,200,0.65)">NOVEMBER 6, 2026</text>
+
+  <!-- ivy over the crown and up the columns -->
+  <g>
+    <path d="M 500 240 C 540 205 660 205 700 240" fill="none" stroke="#3E4A2E" stroke-width="2"/>
+    <use href="#leaf" fill="#4B5A3A" transform="translate(510 233) rotate(-50) scale(2.1)"/>
+    <use href="#leaf" fill="#57683F" transform="translate(535 219) rotate(30) scale(1.8)"/>
+    <use href="#leaf" fill="#8B907F" transform="translate(562 211) rotate(-25) scale(2.2)"/>
+    <use href="#leaf" fill="#4B5A3A" transform="translate(592 207) rotate(20) scale(1.9)"/>
+    <use href="#leaf" fill="#6A4A50" transform="translate(622 209) rotate(-15) scale(2.0)"/>
+    <use href="#leaf" fill="#57683F" transform="translate(650 215) rotate(35) scale(2.2)"/>
+    <use href="#leaf" fill="#4B5A3A" transform="translate(676 226) rotate(-40) scale(1.8)"/>
+    <use href="#leaf" fill="#8B907F" transform="translate(695 237) rotate(55) scale(2.0)"/>
+
+    <path d="M 418 490 C 404 440 436 420 418 370 C 404 330 428 300 420 268"
+          fill="none" stroke="#3E4A2E" stroke-width="2"/>
+    <use href="#leaf" fill="#4B5A3A" transform="translate(410 462) rotate(-80) scale(2.0)"/>
+    <use href="#leaf" fill="#8B907F" transform="translate(428 430) rotate(70) scale(1.8)"/>
+    <use href="#leaf" fill="#57683F" transform="translate(420 392) rotate(-70) scale(2.1)"/>
+    <use href="#leaf" fill="#6A4A50" transform="translate(412 350) rotate(60) scale(1.7)"/>
+    <use href="#leaf" fill="#4B5A3A" transform="translate(426 315) rotate(-60) scale(2.0)"/>
+    <use href="#leaf" fill="#57683F" transform="translate(418 280) rotate(45) scale(1.8)"/>
+
+    <path d="M 782 490 C 796 450 768 430 782 390 C 792 358 776 330 784 305"
+          fill="none" stroke="#3E4A2E" stroke-width="2"/>
+    <use href="#leaf" fill="#57683F" transform="translate(788 466) rotate(80) scale(1.9)"/>
+    <use href="#leaf" fill="#4B5A3A" transform="translate(772 434) rotate(-70) scale(2.0)"/>
+    <use href="#leaf" fill="#8B907F" transform="translate(784 398) rotate(65) scale(1.8)"/>
+    <use href="#leaf" fill="#6A4A50" transform="translate(778 362) rotate(-55) scale(1.9)"/>
+    <use href="#leaf" fill="#4B5A3A" transform="translate(786 326) rotate(50) scale(1.7)"/>
+  </g>
+
+  <!-- names -->
+  <text x="600" y="560" text-anchor="middle" font-family="Didot, Bodoni 72, Georgia, serif"
+        font-size="58" fill="#E8DCC8">Devin <tspan font-style="italic" fill="#C99F94">&amp;</tspan> Jessica</text>
+
+  <!-- venue line with hairline ornaments -->
+  <line x1="330" y1="594" x2="470" y2="594" stroke="rgba(106,74,80,0.9)" stroke-width="1"/>
+  <line x1="730" y1="594" x2="870" y2="594" stroke="rgba(106,74,80,0.9)" stroke-width="1"/>
+  <rect x="596" y="590" width="8" height="8" transform="rotate(45 600 594)" fill="#C99F94"/>
+  <text x="600" y="618" text-anchor="middle" font-family="Georgia, serif"
+        font-size="16" letter-spacing="5" fill="rgba(194,178,154,0.95)">ALDRIDGE GARDENS · HOOVER, ALABAMA</text>
+</svg>
