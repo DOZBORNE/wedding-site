@@ -1,9 +1,21 @@
 <script lang="ts">
-	import { COUPLE, NAV_LINKS } from '$lib/config';
+	import { fade, fly } from 'svelte/transition';
+	import { COUPLE, NAV_LINKS, REGISTRY_URL } from '$lib/config';
 	import Seal from './Seal.svelte';
 
 	let open = $state(false);
+	const close = () => (open = false);
+
+	// lock the page scroll while the drawer is out
+	$effect(() => {
+		document.body.style.overflow = open ? 'hidden' : '';
+		return () => {
+			document.body.style.overflow = '';
+		};
+	});
 </script>
+
+<svelte:window onkeydown={(e) => e.key === 'Escape' && close()} />
 
 <nav class="nav">
 	<a class="nav-mono" href="/#top" aria-label="Back to top">
@@ -17,7 +29,7 @@
 	</div>
 
 	<div class="nav-right">
-		<a class="nav-rsvp" href="/#rsvp" onclick={() => (open = false)}>
+		<a class="nav-rsvp" href="/#rsvp" onclick={close}>
 			<Seal size={26} />RSVP
 		</a>
 		<button
@@ -26,17 +38,39 @@
 			aria-label={open ? 'Close menu' : 'Open menu'}
 			onclick={() => (open = !open)}
 		>
-			{open ? '✕' : '☰'}
+			☰
 		</button>
 	</div>
 </nav>
 
 {#if open}
-	<div class="mobile-menu">
-		{#each NAV_LINKS as link (link.href)}
-			<a href={link.href} onclick={() => (open = false)}>{link.label}</a>
-		{/each}
-	</div>
+	<div
+		class="scrim"
+		transition:fade={{ duration: 240 }}
+		onclick={close}
+		aria-hidden="true"
+	></div>
+	<aside class="drawer" transition:fly={{ x: 340, duration: 380, opacity: 1 }} aria-label="Menu">
+		<div class="drawer-head">
+			<span class="drawer-mono">{COUPLE.monogram[0]}<i>&amp;</i>{COUPLE.monogram[1]}</span>
+			<button class="drawer-close" aria-label="Close menu" onclick={close}>✕</button>
+		</div>
+		<div class="drawer-links">
+			{#each NAV_LINKS as link, i (link.href)}
+				<a
+					href={link.href}
+					onclick={close}
+					in:fly={{ x: 40, duration: 350, delay: 120 + i * 55 }}
+				>
+					{link.label}
+				</a>
+			{/each}
+		</div>
+		<div class="drawer-foot" in:fade={{ duration: 300, delay: 350 }}>
+			<a class="drawer-rsvp" href="/#rsvp" onclick={close}><Seal size={30} />RSVP</a>
+			<a class="drawer-reg" href={REGISTRY_URL} target="_blank" rel="noopener">Registry ↗</a>
+		</div>
+	</aside>
 {/if}
 
 <style>
@@ -73,6 +107,7 @@
 	.nav-links a {
 		text-decoration: none;
 		font-size: 0.72rem;
+		font-weight: 600;
 		letter-spacing: 0.26em;
 		text-transform: uppercase;
 		color: var(--ink-muted);
@@ -94,6 +129,7 @@
 		border: 1px solid rgba(232, 220, 200, 0.35);
 		padding: 0.38rem 0.9rem 0.38rem 0.5rem;
 		font-size: 0.72rem;
+		font-weight: 600;
 		letter-spacing: 0.28em;
 		text-indent: 0.1em;
 		text-transform: uppercase;
@@ -115,25 +151,6 @@
 		padding: 0.3rem 0.6rem;
 		cursor: pointer;
 	}
-	.mobile-menu {
-		position: sticky;
-		top: 3.4rem;
-		z-index: 29;
-		display: none;
-		background: rgba(27, 20, 16, 0.96);
-		border-bottom: 1px solid var(--line);
-		padding: 1rem clamp(1rem, 4vw, 2rem) 1.4rem;
-	}
-	.mobile-menu a {
-		display: block;
-		text-decoration: none;
-		font-size: 0.8rem;
-		letter-spacing: 0.26em;
-		text-transform: uppercase;
-		color: var(--ink-muted);
-		padding: 0.6rem 0;
-		border-bottom: 1px solid rgba(230, 217, 198, 0.08);
-	}
 	@media (max-width: 860px) {
 		.nav-links {
 			display: none;
@@ -141,8 +158,108 @@
 		.menu-btn {
 			display: block;
 		}
-		.mobile-menu {
-			display: block;
-		}
+	}
+
+	/* ---- drawer ---- */
+	.scrim {
+		position: fixed;
+		inset: 0;
+		z-index: 48;
+		background: rgba(20, 13, 10, 0.6);
+		backdrop-filter: blur(3px);
+		-webkit-backdrop-filter: blur(3px);
+	}
+	.drawer {
+		position: fixed;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		z-index: 49;
+		width: min(320px, 82vw);
+		background: linear-gradient(200deg, #2a1e17, var(--espresso) 55%, #1d1510);
+		border-left: 1px solid var(--line);
+		box-shadow: -30px 0 70px rgba(0, 0, 0, 0.55);
+		display: flex;
+		flex-direction: column;
+		padding: 1rem 1.6rem 2rem;
+	}
+	.drawer-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding-bottom: 1rem;
+		border-bottom: 1px solid var(--line);
+	}
+	.drawer-mono {
+		font-family: var(--display);
+		font-size: 1.4rem;
+		color: var(--parchment);
+	}
+	.drawer-mono i {
+		font-style: italic;
+		color: var(--blush);
+		font-size: 0.7em;
+		vertical-align: 0.25em;
+	}
+	.drawer-close {
+		background: none;
+		border: 1px solid var(--line);
+		color: var(--ink-muted);
+		font-size: 0.95rem;
+		padding: 0.35rem 0.65rem;
+		cursor: pointer;
+	}
+	.drawer-links {
+		display: grid;
+		align-content: start;
+		flex: 1;
+		padding-top: 1.2rem;
+	}
+	.drawer-links a {
+		text-decoration: none;
+		font-family: var(--display);
+		font-size: 1.35rem;
+		color: var(--ink-on-dark);
+		padding: 0.75rem 0.2rem;
+		border-bottom: 1px solid rgba(230, 217, 198, 0.08);
+		transition: color 0.2s ease;
+	}
+	.drawer-links a:hover {
+		color: var(--candle);
+	}
+	.drawer-foot {
+		display: grid;
+		gap: 0.8rem;
+	}
+	.drawer-rsvp {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.7rem;
+		text-decoration: none;
+		background: rgba(232, 220, 200, 0.92);
+		color: var(--claret);
+		font-size: 0.8rem;
+		font-weight: 600;
+		letter-spacing: 0.3em;
+		text-indent: 0.3em;
+		text-transform: uppercase;
+		padding: 0.75rem 1rem;
+	}
+	.drawer-reg {
+		text-align: center;
+		text-decoration: none;
+		border: 1px solid rgba(232, 220, 200, 0.35);
+		color: var(--parchment);
+		font-size: 0.74rem;
+		font-weight: 600;
+		letter-spacing: 0.28em;
+		text-indent: 0.28em;
+		text-transform: uppercase;
+		padding: 0.75rem 1rem;
+	}
+	.drawer-reg:hover,
+	.drawer-rsvp:hover {
+		filter: brightness(1.05);
 	}
 </style>
