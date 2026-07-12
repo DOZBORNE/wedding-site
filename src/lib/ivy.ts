@@ -54,19 +54,27 @@ export function drawVine(
 			'transform',
 			`translate(${p.x.toFixed(1)} ${p.y.toFixed(1)}) rotate(${(ang + side * (50 + r2 * 45) + 90).toFixed(1)}) scale(${s.toFixed(2)})`
 		);
+		// holder places the leaf; swayer breathes forever; the leaf itself
+		// only handles its entrance — separate elements so the animations
+		// can never fight over the same transform
+		const swayer = document.createElementNS(NS, 'g');
+		swayer.style.transformBox = 'fill-box';
+		swayer.style.transformOrigin = '50% 100%';
+		const inDelay = Math.round(baseDelay + (i / n) * 1100);
+		swayer.style.animation = `leaf-sway-${i % 2 ? 'a' : 'b'} ${(3.4 + r2 * 3).toFixed(2)}s ease-in-out ${(
+			(animate ? (inDelay + 500) / 1000 : 0) + r1 * 3
+		).toFixed(2)}s infinite alternate both`;
 		const leaf = document.createElementNS(NS, 'path');
 		leaf.setAttribute('d', LEAF_D);
 		leaf.setAttribute('fill', LEAF_COLORS[Math.floor(r1 * LEAF_COLORS.length)]);
 		leaf.setAttribute('opacity', (0.85 + r2 * 0.15).toFixed(2));
-		// grow in (stem order, just behind the drawing tip), then breathe forever
-		leaf.style.transformBox = 'fill-box';
-		leaf.style.transformOrigin = '50% 100%';
-		const inDelay = Math.round(baseDelay + (i / n) * 1100);
-		const sway = `leaf-sway-${i % 2 ? 'a' : 'b'} ${(4.5 + r2 * 3.5).toFixed(2)}s ease-in-out ${(
-			(animate ? (inDelay + 600) / 1000 : 0) + r1 * 4
-		).toFixed(2)}s infinite alternate`;
-		leaf.style.animation = animate ? `leaf-in 0.5s ease ${inDelay}ms both, ${sway}` : sway;
-		holder.appendChild(leaf);
+		if (animate) {
+			leaf.style.transformBox = 'fill-box';
+			leaf.style.transformOrigin = '50% 100%';
+			leaf.style.animation = `leaf-in 0.5s ease ${inDelay}ms both`;
+		}
+		swayer.appendChild(leaf);
+		holder.appendChild(swayer);
 		svg.appendChild(holder);
 	}
 }

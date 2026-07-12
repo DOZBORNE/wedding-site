@@ -155,21 +155,21 @@ h4 {
 		transform: scale(0) rotate(-40deg);
 	}
 }
-/* ambient breathing — each leaf swells and tips on its own slow rhythm */
+/* ambient breathing — each leaf swells and waves on its own slow rhythm */
 @keyframes leaf-sway-a {
 	from {
-		transform: scale(1) rotate(0deg);
+		transform: rotate(-6deg) scale(0.96);
 	}
 	to {
-		transform: scale(1.09) rotate(4deg);
+		transform: rotate(8deg) scale(1.14);
 	}
 }
 @keyframes leaf-sway-b {
 	from {
-		transform: scale(1) rotate(0deg);
+		transform: rotate(6deg) scale(0.97);
 	}
 	to {
-		transform: scale(1.07) rotate(-4.5deg);
+		transform: rotate(-8deg) scale(1.12);
 	}
 }
 
