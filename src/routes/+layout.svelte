@@ -6,6 +6,7 @@
 	import '@fontsource/cormorant-garamond/400-italic.css';
 	import '@fontsource/cormorant-garamond/500.css';
 	import '@fontsource/cormorant-garamond/600.css';
+	import '@fontsource/cormorant-garamond/600-italic.css';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import { COUPLE, VENUE, WEDDING } from '$lib/config';

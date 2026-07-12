@@ -18,9 +18,9 @@
 	--blush: #c99f94;
 	--candle: #e3b87f;
 
-	--ink-on-dark: #e6d9c6;
-	--ink-muted: #b4a48d;
-	--ink-faint: #8d7f6c;
+	--ink-on-dark: #eadfce;
+	--ink-muted: #c2b29a;
+	--ink-faint: #9d8f7a;
 	--ink-on-paper: #3a2420;
 	--line: rgba(230, 217, 198, 0.18);
 
@@ -49,8 +49,9 @@ body {
 	background: var(--espresso);
 	color: var(--ink-on-dark);
 	font-family: var(--body);
-	font-size: 1.125rem;
-	line-height: 1.65;
+	font-size: 1.16rem;
+	font-weight: 500;
+	line-height: 1.68;
 	-webkit-font-smoothing: antialiased;
 	overflow-x: hidden;
 }
@@ -88,10 +89,11 @@ h4 {
 
 .eyebrow {
 	font-family: var(--body);
-	font-size: 0.78rem;
+	font-size: 0.8rem;
+	font-weight: 600;
 	letter-spacing: 0.34em;
 	text-transform: uppercase;
-	color: var(--thicket);
+	color: #9aa08c;
 }
 
 .block {
@@ -103,7 +105,8 @@ h4 {
 	margin: 0 auto;
 	color: var(--ink-muted);
 	font-style: italic;
-	font-size: 1.15rem;
+	font-weight: 600;
+	font-size: 1.22rem;
 }
 
 /* Romanesque arch — the signature shape */

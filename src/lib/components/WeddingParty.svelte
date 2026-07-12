@@ -56,7 +56,8 @@
 		text-align: center;
 		font-family: var(--display);
 		font-style: italic;
-		font-size: 1.3rem;
+		font-weight: 500;
+		font-size: 1.5rem;
 		color: var(--blush);
 		margin-bottom: 1.6rem;
 	}
