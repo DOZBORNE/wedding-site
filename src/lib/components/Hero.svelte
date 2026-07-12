@@ -18,7 +18,7 @@
 	<div class="hero-inner">
 		<div class="eyebrow blush">Together with their families</div>
 
-		<div class="hero-comp" use:flankIvy={{ seed: 1, crown: true }}>
+		<div class="hero-comp" use:flankIvy={{ seed: 1, crown: true, delay: 1000 }}>
 			<Column class="hero-col" />
 			<div class="hero-arch arch" class:has-photo={!!HERO_PHOTO}>
 				{#if HERO_PHOTO}
@@ -106,6 +106,58 @@
 	}
 	.hero-comp :global(.hero-col) {
 		width: clamp(40px, 8vw, 62px);
+	}
+
+	/* ---- entrance: columns rise, arch settles, monogram breathes in ---- */
+	.hero-comp :global(.hero-col) {
+		animation: col-rise 1s cubic-bezier(0.2, 0.7, 0.3, 1) 0.1s both;
+	}
+	.hero-comp :global(svg.col:nth-of-type(2)) {
+		animation-delay: 0.28s;
+	}
+	.hero-arch {
+		animation: arch-in 1.1s cubic-bezier(0.2, 0.7, 0.3, 1) 0.45s both;
+	}
+	.monogram {
+		animation: mono-in 1.4s ease 0.9s both;
+	}
+	.eyebrow {
+		animation: soft-rise 0.9s ease 0.05s both;
+	}
+	h1 {
+		animation: soft-rise 1s ease 0.7s both;
+	}
+	.hero :global(.ornament),
+	.date {
+		animation: soft-rise 1s ease 0.95s both;
+	}
+	.place,
+	.count {
+		animation: soft-rise 1s ease 1.15s both;
+	}
+	@keyframes col-rise {
+		from {
+			opacity: 0;
+			transform: translateY(46px);
+		}
+	}
+	@keyframes arch-in {
+		from {
+			opacity: 0;
+			transform: translateY(30px) scale(0.965);
+		}
+	}
+	@keyframes mono-in {
+		from {
+			opacity: 0;
+			letter-spacing: 0.3em;
+		}
+	}
+	@keyframes soft-rise {
+		from {
+			opacity: 0;
+			transform: translateY(16px);
+		}
 	}
 	.hero-arch {
 		width: min(300px, 60vw);
