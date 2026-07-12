@@ -58,12 +58,14 @@ export function drawVine(
 		leaf.setAttribute('d', LEAF_D);
 		leaf.setAttribute('fill', LEAF_COLORS[Math.floor(r1 * LEAF_COLORS.length)]);
 		leaf.setAttribute('opacity', (0.85 + r2 * 0.15).toFixed(2));
-		if (animate) {
-			// leaves unfurl in stem order, just behind the drawing tip
-			leaf.style.transformBox = 'fill-box';
-			leaf.style.transformOrigin = '50% 100%';
-			leaf.style.animation = `leaf-in 0.5s ease ${Math.round(baseDelay + (i / n) * 1100)}ms both`;
-		}
+		// grow in (stem order, just behind the drawing tip), then breathe forever
+		leaf.style.transformBox = 'fill-box';
+		leaf.style.transformOrigin = '50% 100%';
+		const inDelay = Math.round(baseDelay + (i / n) * 1100);
+		const sway = `leaf-sway-${i % 2 ? 'a' : 'b'} ${(4.5 + r2 * 3.5).toFixed(2)}s ease-in-out ${(
+			(animate ? (inDelay + 600) / 1000 : 0) + r1 * 4
+		).toFixed(2)}s infinite alternate`;
+		leaf.style.animation = animate ? `leaf-in 0.5s ease ${inDelay}ms both, ${sway}` : sway;
 		holder.appendChild(leaf);
 		svg.appendChild(holder);
 	}
