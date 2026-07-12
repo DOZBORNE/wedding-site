@@ -3,6 +3,39 @@
 	import { reveal } from '$lib/reveal';
 	import MirrorFrame from './MirrorFrame.svelte';
 	import SectionHead from './SectionHead.svelte';
+
+	// scroll progress per chapter (0 → entering, 1 → read) drives the
+	// storybook: plates turn, photos drift, the binding stem fills in
+	let progress = $state<number[]>(CHAPTERS.map(() => 0));
+	let chapterEls: HTMLElement[] = [];
+	let reduced = $state(false);
+
+	$effect(() => {
+		reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		let raf = 0;
+		const measure = () => {
+			raf = 0;
+			const vh = window.innerHeight;
+			const next = chapterEls.map((el) => {
+				if (!el) return 0;
+				const rect = el.getBoundingClientRect();
+				const p = (vh * 0.8 - rect.top) / (rect.height + vh * 0.4);
+				return Math.min(1, Math.max(0, p));
+			});
+			if (next.some((p, i) => Math.abs(p - progress[i]) > 0.005)) progress = next;
+		};
+		const onScroll = () => {
+			if (!raf) raf = requestAnimationFrame(measure);
+		};
+		measure();
+		window.addEventListener('scroll', onScroll, { passive: true });
+		window.addEventListener('resize', onScroll);
+		return () => {
+			cancelAnimationFrame(raf);
+			window.removeEventListener('scroll', onScroll);
+			window.removeEventListener('resize', onScroll);
+		};
+	});
 </script>
 
 <section class="block story" id="story">
@@ -10,13 +43,29 @@
 		<SectionHead eyebrow="Our story" title="A story in three chapters" seed={11} />
 
 		{#each CHAPTERS as chapter, i (chapter.numeral)}
-			<article class="chapter" class:rev={i % 2 === 1} use:reveal>
+			{#if i > 0}
+				<div class="binding" aria-hidden="true">
+					<span
+						class="stem"
+						style="transform: scaleY({Math.min(1, progress[i] * 2.2)})"
+					></span>
+					<i class="bud" class:lit={progress[i] > 0.12}>❦</i>
+				</div>
+			{/if}
+			<article
+				class="chapter"
+				class:rev={i % 2 === 1}
+				bind:this={chapterEls[i]}
+				style="--p:{reduced ? 0.5 : progress[i]}"
+				use:reveal
+			>
 				<div class="ch-photo">
 					<MirrorFrame
 						plates={chapter.plates}
 						alt={chapter.title}
 						ivy={i !== 1}
 						seed={41 + i}
+						progress={progress[i]}
 					/>
 				</div>
 				<div class="story-copy">
@@ -62,16 +111,77 @@
 		max-width: 340px;
 		width: 100%;
 		margin: 0 auto;
+		/* gentle parallax drift as the chapter scrolls through */
+		transform: translateY(calc((0.5 - var(--p, 0.5)) * 34px));
+		will-change: transform;
 	}
+	@media (prefers-reduced-motion: reduce) {
+		.ch-photo {
+			transform: none;
+		}
+	}
+
+	/* the bookbinding stem between chapters, filling as you read */
+	.binding {
+		display: grid;
+		justify-items: center;
+		gap: 0.4rem;
+		height: 4.6rem;
+	}
+	.stem {
+		width: 1px;
+		flex: 1;
+		height: 3rem;
+		background: linear-gradient(180deg, transparent, var(--mauve), var(--olive));
+		transform-origin: top;
+		transform: scaleY(0);
+		transition: transform 0.25s linear;
+	}
+	.bud {
+		color: var(--mauve);
+		font-size: 0.9rem;
+		opacity: 0.25;
+		transition:
+			opacity 0.6s ease,
+			color 0.6s ease;
+	}
+	.bud.lit {
+		opacity: 1;
+		color: var(--candle);
+	}
+
 	.story-copy {
 		display: grid;
 		gap: 1rem;
 	}
+	/* copy cascades in line by line once the chapter reveals */
+	.chapter:global(.reveal) .story-copy > * {
+		opacity: 0;
+		transform: translateY(16px);
+		transition:
+			opacity 0.7s ease,
+			transform 0.7s ease;
+	}
+	.chapter:global(.reveal.in) .story-copy > * {
+		opacity: 1;
+		transform: none;
+	}
+	.chapter:global(.reveal.in) .story-copy > :nth-child(1) {
+		transition-delay: 0.05s;
+	}
+	.chapter:global(.reveal.in) .story-copy > :nth-child(2) {
+		transition-delay: 0.2s;
+	}
+	.chapter:global(.reveal.in) .story-copy > :nth-child(3) {
+		transition-delay: 0.38s;
+	}
+
 	.ch-num {
 		display: flex;
 		align-items: center;
 		gap: 0.9rem;
 		font-size: 0.72rem;
+		font-weight: 600;
 		letter-spacing: 0.34em;
 		text-transform: uppercase;
 		color: var(--candle);
@@ -113,8 +223,8 @@
 		gap: 0.2rem;
 	}
 	.t-item b {
-		font-weight: 400;
-		font-size: 0.76rem;
+		font-weight: 500;
+		font-size: 0.78rem;
 		letter-spacing: 0.3em;
 		text-transform: uppercase;
 		color: var(--ink-muted);

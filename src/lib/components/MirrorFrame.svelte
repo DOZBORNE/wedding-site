@@ -10,18 +10,35 @@
 		plates,
 		alt = '',
 		ivy = false,
-		seed = 40
-	}: { plates: Plate[]; alt?: string; ivy?: boolean; seed?: number } = $props();
+		seed = 40,
+		progress = -1
+	}: { plates: Plate[]; alt?: string; ivy?: boolean; seed?: number; progress?: number } = $props();
 
 	let index = $state(0);
 	let shimmer = $state(false);
 	let startX = 0;
+	let lastUserTurn = 0;
+
+	function swapTo(i: number) {
+		if (i === index) return;
+		shimmer = true;
+		index = i;
+		setTimeout(() => (shimmer = false), 650);
+	}
+
+	// scroll-driven page turning: the chapter's scroll progress selects the
+	// plate, unless the reader turned it by hand in the last few seconds
+	const scrollTarget = $derived(
+		progress < 0 ? -1 : Math.min(plates.length - 1, Math.floor(progress * plates.length * 1.2))
+	);
+	$effect(() => {
+		if (scrollTarget >= 0 && Date.now() - lastUserTurn > 3500) swapTo(scrollTarget);
+	});
 
 	function go(delta: number) {
 		if (plates.length < 2) return;
-		shimmer = true;
-		index = (index + delta + plates.length) % plates.length;
-		setTimeout(() => (shimmer = false), 650);
+		lastUserTurn = Date.now();
+		swapTo((index + delta + plates.length) % plates.length);
 	}
 
 	function pointerDown(e: PointerEvent) {
@@ -96,11 +113,8 @@
 						aria-selected={i === index}
 						aria-label="Photo {i + 1}"
 						onclick={() => {
-							if (i !== index) {
-								shimmer = true;
-								index = i;
-								setTimeout(() => (shimmer = false), 650);
-							}
+							lastUserTurn = Date.now();
+							swapTo(i);
 						}}
 					></button>
 				{/each}
