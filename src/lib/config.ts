@@ -73,7 +73,7 @@ export const CHAPTERS = [
 ];
 
 export const TIMELINE = [
-	{ label: 'First met', value: '20XX' }, // TODO
+	{ label: 'First met', value: '2024' },
 	{ label: 'She said yes', value: '2025' }, // TODO: confirm year
 	{ label: 'The wedding', value: '2026' }
 ];

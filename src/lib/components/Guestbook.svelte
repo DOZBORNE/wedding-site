@@ -168,6 +168,15 @@
 		flex: 1;
 		min-width: 180px;
 	}
+	@media (max-width: 560px) {
+		.row {
+			flex-direction: column;
+			align-items: stretch;
+		}
+		.row .claret-btn {
+			width: 100%;
+		}
+	}
 	.hp {
 		position: absolute;
 		left: -9999px;

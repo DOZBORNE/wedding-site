@@ -204,13 +204,23 @@
 		padding: 0.8rem 1.5rem;
 		font-size: 0.72rem;
 	}
-	@media (max-width: 640px) {
+	@media (max-width: 760px) {
 		.directions-row {
+			flex-direction: column;
 			justify-content: center;
 			text-align: center;
 		}
 		.dir-addr {
 			justify-items: center;
+		}
+		.dir-btns {
+			justify-content: center;
+			width: 100%;
+		}
+		.dir-btns .ghost-btn {
+			flex: 1;
+			max-width: 220px;
+			text-align: center;
 		}
 	}
 </style>
