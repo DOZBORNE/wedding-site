@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="wax" cx="0.36" cy="0.32" r="0.75">
+      <stop offset="0" stop-color="#7A2A33"/>
+      <stop offset="0.65" stop-color="#381015"/>
+      <stop offset="1" stop-color="#240A0E"/>
+    </radialGradient>
+  </defs>
+  <path d="M32 3 C48 4 61 16 61 32 C61 49 49 61 32 61 C15 60 3 48 3 32 C4 15 16 2 32 3 Z" fill="url(#wax)"/>
+  <text x="32" y="41" text-anchor="middle" font-family="Didot, 'Bodoni 72', Georgia, serif" font-style="italic" font-size="24" fill="#E8DCC8">DJ</text>
+</svg>
