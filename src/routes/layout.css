@@ -155,21 +155,30 @@ h4 {
 		transform: scale(0) rotate(-40deg);
 	}
 }
-/* ambient breathing — each leaf swells and waves on its own slow rhythm */
+/* ambient life — a swell that ripples up each vine, leaf by leaf */
 @keyframes leaf-sway-a {
 	from {
-		transform: rotate(-6deg) scale(0.96);
+		transform: rotate(-9deg) scale(0.92);
 	}
 	to {
-		transform: rotate(8deg) scale(1.14);
+		transform: rotate(12deg) scale(1.22);
 	}
 }
 @keyframes leaf-sway-b {
 	from {
-		transform: rotate(6deg) scale(0.97);
+		transform: rotate(9deg) scale(0.93);
 	}
 	to {
-		transform: rotate(-8deg) scale(1.12);
+		transform: rotate(-12deg) scale(1.2);
+	}
+}
+/* the whole vine leans gently from its root */
+@keyframes vine-lean {
+	from {
+		transform: rotate(-1.4deg);
+	}
+	to {
+		transform: rotate(1.6deg);
 	}
 }
 

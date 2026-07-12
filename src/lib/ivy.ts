@@ -25,6 +25,13 @@ export function drawVine(
 	animate = false,
 	baseDelay = 0
 ) {
+	// the whole vine leans gently from its root, like air moving through it
+	const vine = document.createElementNS(NS, 'g');
+	vine.style.transformBox = 'fill-box';
+	vine.style.transformOrigin = '50% 100%';
+	vine.style.animation = `vine-lean ${(6 + srand(seed * 3) * 3).toFixed(2)}s ease-in-out ${(-srand(seed * 5) * 6).toFixed(2)}s infinite alternate both`;
+	svg.appendChild(vine);
+
 	const stem = document.createElementNS(NS, 'path');
 	stem.setAttribute('d', d);
 	stem.setAttribute('fill', 'none');
@@ -32,7 +39,7 @@ export function drawVine(
 	stem.setAttribute('stroke-width', '1.4');
 	stem.setAttribute('stroke-linecap', 'round');
 	stem.setAttribute('opacity', '0.95');
-	svg.appendChild(stem);
+	vine.appendChild(stem);
 	const len = stem.getTotalLength();
 	if (animate) {
 		stem.setAttribute('stroke-dasharray', String(len));
@@ -40,6 +47,9 @@ export function drawVine(
 		stem.style.animation = `stem-draw 1.1s ease ${baseDelay}ms both`;
 	}
 	const n = Math.max(4, Math.floor(len / spacing));
+	// one shared rhythm per vine, phase-shifted along the stem: the swell
+	// travels up the vine like growth climbing it
+	const waveDur = 3.8 + srand(seed * 7) * 1.6;
 	for (let i = 1; i <= n; i++) {
 		const t = i / n;
 		const p = stem.getPointAtLength(t * len);
@@ -61,9 +71,9 @@ export function drawVine(
 		swayer.style.transformBox = 'fill-box';
 		swayer.style.transformOrigin = '50% 100%';
 		const inDelay = Math.round(baseDelay + (i / n) * 1100);
-		swayer.style.animation = `leaf-sway-${i % 2 ? 'a' : 'b'} ${(3.4 + r2 * 3).toFixed(2)}s ease-in-out ${(
-			(animate ? (inDelay + 500) / 1000 : 0) + r1 * 3
-		).toFixed(2)}s infinite alternate both`;
+		// negative delay = start mid-cycle, offset by position along the stem
+		const phase = -((i / n) * waveDur * 0.9 + r1 * 0.4);
+		swayer.style.animation = `leaf-sway-${i % 2 ? 'a' : 'b'} ${waveDur.toFixed(2)}s ease-in-out ${phase.toFixed(2)}s infinite alternate both`;
 		const leaf = document.createElementNS(NS, 'path');
 		leaf.setAttribute('d', LEAF_D);
 		leaf.setAttribute('fill', LEAF_COLORS[Math.floor(r1 * LEAF_COLORS.length)]);
@@ -75,7 +85,7 @@ export function drawVine(
 		}
 		swayer.appendChild(leaf);
 		holder.appendChild(swayer);
-		svg.appendChild(holder);
+		vine.appendChild(holder);
 	}
 }
 
