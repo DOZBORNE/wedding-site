@@ -125,10 +125,12 @@
 		{/each}
 	</svg>
 
-	<p class="addr">
-		{VENUE.address} · ceremony &amp; reception in one place ·
-		<a href={VENUE.directionsUrl} target="_blank" rel="noopener">directions</a>
-	</p>
+	<div class="addr">
+		<span class="addr-line">{VENUE.address}</span>
+		<a class="dir-btn" href={VENUE.directionsUrl} target="_blank" rel="noopener">
+			Get directions ↗
+		</a>
+	</div>
 </section>
 
 <style>
@@ -190,15 +192,37 @@
 	}
 	.addr {
 		margin: 0;
-		padding: 1.2rem 1.5rem 1.6rem;
+		padding: 1.3rem 1.5rem 1.6rem;
 		width: 100%;
-		font-style: italic;
-		color: var(--ink-muted);
-		font-size: 0.98rem;
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		align-items: center;
+		gap: 0.9rem 1.6rem;
 		background: #1e2420;
 		border-top: 1px solid rgba(232, 220, 200, 0.1);
 	}
-	.addr a {
+	.addr-line {
+		font-style: italic;
+		color: var(--ink-on-dark);
+		font-size: 1.08rem;
+	}
+	.dir-btn {
+		text-decoration: none;
+		border: 1px solid var(--candle);
 		color: var(--candle);
+		font-size: 0.74rem;
+		font-weight: 600;
+		letter-spacing: 0.28em;
+		text-indent: 0.28em;
+		text-transform: uppercase;
+		padding: 0.65rem 1.4rem;
+		transition:
+			background 0.25s ease,
+			color 0.25s ease;
+	}
+	.dir-btn:hover {
+		background: var(--candle);
+		color: var(--espresso);
 	}
 </style>

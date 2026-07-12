@@ -30,7 +30,8 @@ export const VENUE = {
 	lat: 33.38722,
 	lng: -86.79212,
 	directionsUrl:
-		'https://www.google.com/maps/dir/?api=1&destination=Aldridge+Gardens,+3530+Lorna+Rd,+Hoover,+AL+35216'
+		'https://www.google.com/maps/dir/?api=1&destination=Aldridge+Gardens,+3530+Lorna+Rd,+Hoover,+AL+35216',
+	appleDirectionsUrl: 'https://maps.apple.com/?daddr=3530+Lorna+Rd,+Hoover,+AL+35216'
 };
 
 export const REGISTRY_URL =

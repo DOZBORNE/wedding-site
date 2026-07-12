@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { MEALS, WEDDING } from '$lib/config';
+	import { MEALS, REGISTRY_URL, WEDDING } from '$lib/config';
 	import type { PublicParty } from '$lib/types';
 	import Seal from './Seal.svelte';
 
@@ -252,6 +252,9 @@
 			{#if contactEmail}A confirmation is headed to {contactEmail}.{/if}
 		</p>
 		<p class="sub"><i>Until {WEDDING.dateLabel} —</i></p>
+		<a class="after-link" href={REGISTRY_URL} target="_blank" rel="noopener">
+			Looking for our registry? It lives with The Knot ↗
+		</a>
 	</div>
 {/if}
 
@@ -423,6 +426,11 @@
 	}
 	.done-seal {
 		animation: press 0.5s ease;
+	}
+	.after-link {
+		font-style: italic;
+		color: var(--chocolate);
+		font-size: 0.98rem;
 	}
 	@keyframes press {
 		0% {

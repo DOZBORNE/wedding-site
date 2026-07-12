@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { WEDDING } from '$lib/config';
+	import { VENUE, WEDDING } from '$lib/config';
 	import { flankIvy } from '$lib/ivy';
 	import { reveal } from '$lib/reveal';
 	import Column from './Column.svelte';
@@ -56,6 +56,20 @@
 		<div class="map-block" use:reveal>
 			<div class="eyebrow" style="text-align:center;">Finding the garden</div>
 			<VenueMap />
+			<div class="directions-row">
+				<div class="dir-addr">
+					<b>{VENUE.name}</b>
+					<i>{VENUE.address}</i>
+				</div>
+				<div class="dir-btns">
+					<a class="ghost-btn" href={VENUE.directionsUrl} target="_blank" rel="noopener">
+						Google Maps ↗
+					</a>
+					<a class="ghost-btn" href={VENUE.appleDirectionsUrl} target="_blank" rel="noopener">
+						Apple Maps ↗
+					</a>
+				</div>
+			</div>
 		</div>
 	</div>
 </section>
@@ -160,5 +174,43 @@
 		margin-top: clamp(3rem, 6vw, 4.5rem);
 		display: grid;
 		gap: 1.2rem;
+	}
+	.directions-row {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		align-items: center;
+		gap: 1rem 1.5rem;
+	}
+	.dir-addr {
+		display: grid;
+		gap: 0.15rem;
+	}
+	.dir-addr b {
+		font-family: var(--display);
+		font-weight: 400;
+		font-size: 1.25rem;
+		color: var(--parchment);
+	}
+	.dir-addr i {
+		color: var(--ink-muted);
+	}
+	.dir-btns {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.8rem;
+	}
+	.dir-btns .ghost-btn {
+		padding: 0.8rem 1.5rem;
+		font-size: 0.72rem;
+	}
+	@media (max-width: 640px) {
+		.directions-row {
+			justify-content: center;
+			text-align: center;
+		}
+		.dir-addr {
+			justify-items: center;
+		}
 	}
 </style>

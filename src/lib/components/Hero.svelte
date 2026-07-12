@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { COUPLE, HERO_PHOTO, VENUE, WEDDING } from '$lib/config';
+	import { COUPLE, HERO_PHOTO, REGISTRY_URL, VENUE, WEDDING } from '$lib/config';
 	import { flankIvy } from '$lib/ivy';
 	import Column from './Column.svelte';
 
@@ -41,6 +41,10 @@
 		{#if daysLeft > 0}
 			<div class="count"><i>{daysLeft} days to go</i></div>
 		{/if}
+		<div class="quick">
+			<a class="quick-rsvp" href="/#rsvp">RSVP</a>
+			<a class="quick-reg" href={REGISTRY_URL} target="_blank" rel="noopener">Registry ↗</a>
+		</div>
 	</div>
 </header>
 
@@ -134,6 +138,41 @@
 	.place,
 	.count {
 		animation: soft-rise 1s ease 1.15s both;
+	}
+	.quick {
+		display: flex;
+		gap: 0.9rem;
+		margin-top: 0.6rem;
+		animation: soft-rise 1s ease 1.35s both;
+	}
+	.quick a {
+		text-decoration: none;
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.28em;
+		text-indent: 0.28em;
+		text-transform: uppercase;
+		padding: 0.7rem 1.6rem;
+		transition:
+			background 0.25s ease,
+			border-color 0.25s ease,
+			color 0.25s ease;
+	}
+	.quick-rsvp {
+		background: rgba(232, 220, 200, 0.92);
+		border: 1px solid rgba(232, 220, 200, 0.92);
+		color: var(--claret);
+	}
+	.quick-rsvp:hover {
+		background: var(--parchment);
+	}
+	.quick-reg {
+		border: 1px solid rgba(232, 220, 200, 0.4);
+		color: var(--parchment);
+	}
+	.quick-reg:hover {
+		border-color: var(--candle);
+		background: rgba(227, 184, 127, 0.08);
 	}
 	@keyframes col-rise {
 		from {
