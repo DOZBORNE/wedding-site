@@ -90,6 +90,9 @@
 		backdrop-filter: blur(10px);
 		-webkit-backdrop-filter: blur(10px);
 		border-bottom: 1px solid var(--line);
+		/* own compositor layer — sticky + backdrop-filter flickers on iOS
+		   during toolbar show/hide without it */
+		transform: translateZ(0);
 	}
 	.nav-mono {
 		font-family: var(--display);

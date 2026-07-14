@@ -10,6 +10,7 @@
 	// progress[i] = how far through chapter i's pinned range we've scrolled.
 	let progress = $state<number[]>(CHAPTERS.map(() => 0));
 	let stageEls: HTMLElement[] = [];
+	let probeEl = $state<HTMLDivElement>();
 	let reduced = $state(false);
 
 	$effect(() => {
@@ -17,7 +18,10 @@
 		let raf = 0;
 		const measure = () => {
 			raf = 0;
-			const vh = window.innerHeight;
+			// stable small-viewport height: window.innerHeight changes when the
+			// iOS toolbar hides/shows, which made progress (and the pinned
+			// chapters) jump on every scroll-direction change
+			const vh = probeEl?.offsetHeight || window.innerHeight;
 			const next = stageEls.map((el) => {
 				if (!el) return 0;
 				const rect = el.getBoundingClientRect();
@@ -42,6 +46,7 @@
 </script>
 
 <section class="block story" id="story">
+	<div class="vh-probe" bind:this={probeEl} aria-hidden="true"></div>
 	<div class="wrap">
 		<SectionHead eyebrow="Our story" title="A story in three chapters" seed={11} />
 
@@ -90,6 +95,18 @@
 <style>
 	.story {
 		background: linear-gradient(180deg, var(--espresso), #291b15 50%, var(--espresso));
+	}
+	/* invisible ruler: always exactly 100svh tall, unaffected by the
+	   mobile toolbar, so scroll math stays stable */
+	.vh-probe {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 0;
+		height: 100vh;
+		height: 100svh;
+		visibility: hidden;
+		pointer-events: none;
 	}
 
 	/* tall scroll region; content pins inside while photos page through */
