@@ -3,6 +3,7 @@
 	import { flankIvy } from '$lib/ivy';
 	import { reveal } from '$lib/reveal';
 	import Column from './Column.svelte';
+	import Icon from './Icon.svelte';
 	import SectionHead from './SectionHead.svelte';
 	import VenueMap from './VenueMap.svelte';
 
@@ -63,10 +64,10 @@
 				</div>
 				<div class="dir-btns">
 					<a class="ghost-btn" href={VENUE.directionsUrl} target="_blank" rel="noopener">
-						Google Maps ↗
+						Google Maps <Icon name="out" />
 					</a>
 					<a class="ghost-btn" href={VENUE.appleDirectionsUrl} target="_blank" rel="noopener">
-						Apple Maps ↗
+						Apple Maps <Icon name="out" />
 					</a>
 				</div>
 			</div>

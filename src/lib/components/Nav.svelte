@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
 	import { COUPLE, NAV_LINKS, REGISTRY_URL } from '$lib/config';
+	import Icon from './Icon.svelte';
 	import Seal from './Seal.svelte';
 
 	let open = $state(false);
@@ -68,7 +69,9 @@
 		</div>
 		<div class="drawer-foot" in:fade={{ duration: 300, delay: 350 }}>
 			<a class="drawer-rsvp" href="/#rsvp" onclick={close}><Seal size={30} />RSVP</a>
-			<a class="drawer-reg" href={REGISTRY_URL} target="_blank" rel="noopener">Registry ↗</a>
+			<a class="drawer-reg" href={REGISTRY_URL} target="_blank" rel="noopener">
+				Registry <Icon name="out" />
+			</a>
 		</div>
 	</aside>
 {/if}

@@ -3,6 +3,7 @@
 	// the lake, the pavilion, the hydrangeas — drawn in cream line-work.
 	import { VENUE } from '$lib/config';
 	import { reveal } from '$lib/reveal';
+	import Icon from './Icon.svelte';
 
 	const fireflies = [
 		{ x: 150, y: 240, d: 0 },
@@ -128,7 +129,7 @@
 	<div class="addr">
 		<span class="addr-line">{VENUE.address}</span>
 		<a class="dir-btn" href={VENUE.directionsUrl} target="_blank" rel="noopener">
-			Get directions ↗
+			Get directions <Icon name="out" />
 		</a>
 	</div>
 </section>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { MEALS, REGISTRY_URL, WEDDING } from '$lib/config';
 	import type { PublicParty } from '$lib/types';
+	import Icon from './Icon.svelte';
 	import Seal from './Seal.svelte';
 
 	let { party = null }: { party?: PublicParty | null } = $props();
@@ -253,7 +254,7 @@
 		</p>
 		<p class="sub"><i>Until {WEDDING.dateLabel} —</i></p>
 		<a class="after-link" href={REGISTRY_URL} target="_blank" rel="noopener">
-			Looking for our registry? It lives with The Knot ↗
+			Looking for our registry? It lives with The Knot <Icon name="out" />
 		</a>
 	</div>
 {/if}

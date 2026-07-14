@@ -69,7 +69,7 @@
 				const popup = new maplibre.Popup({ offset: 30 }).setHTML(
 					`<strong style="font-family:var(--display);font-size:1.05rem;">${VENUE.name}</strong><br/>` +
 						`<span style="font-style:italic;">${VENUE.address}</span><br/>` +
-						`<a href="${VENUE.directionsUrl}" target="_blank" rel="noopener" style="color:var(--claret);letter-spacing:0.14em;text-transform:uppercase;font-size:0.72rem;">Get directions ↗</a>`
+						`<a href="${VENUE.directionsUrl}" target="_blank" rel="noopener" style="color:var(--claret);letter-spacing:0.14em;text-transform:uppercase;font-size:0.72rem;">Get directions <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-1px"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg></a>`
 				);
 				new maplibre.Marker({ element: el, anchor: 'center' })
 					.setLngLat([VENUE.lng, VENUE.lat])
@@ -108,7 +108,7 @@
 			<p><strong>{VENUE.name}</strong></p>
 			<p><i>{VENUE.address}</i></p>
 			<a class="ghost-btn" href={VENUE.directionsUrl} target="_blank" rel="noopener">
-				Get directions ↗
+				Get directions
 			</a>
 		</div>
 	{:else}

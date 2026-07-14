@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { COUPLE, VENUE, WEDDING } from '$lib/config';
+	import Icon from '$lib/components/Icon.svelte';
 	import RsvpForm from '$lib/components/RsvpForm.svelte';
 	import Seal from '$lib/components/Seal.svelte';
 
@@ -22,7 +23,7 @@
 		<RsvpForm party={data.party} />
 	</div>
 
-	<a class="back" href="/">← back to the wedding site</a>
+	<a class="back" href="/"><Icon name="left" /> back to the wedding site</a>
 </main>
 
 <style>

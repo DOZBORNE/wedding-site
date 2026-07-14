@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { REGISTRY_URL } from '$lib/config';
 	import { reveal } from '$lib/reveal';
+	import Icon from './Icon.svelte';
 	import SectionHead from './SectionHead.svelte';
 </script>
 
@@ -16,7 +17,7 @@
 		</p>
 		<div class="cta">
 			<a class="ghost-btn" href={REGISTRY_URL} target="_blank" rel="noopener">
-				View our registry ↗
+				View our registry <Icon name="out" />
 			</a>
 		</div>
 	</div>

@@ -2,6 +2,7 @@
 	import { COUPLE, HERO_PHOTO, REGISTRY_URL, VENUE, WEDDING } from '$lib/config';
 	import { flankIvy } from '$lib/ivy';
 	import Column from './Column.svelte';
+	import Icon from './Icon.svelte';
 
 	const target = new Date(WEDDING.dateISO).getTime();
 	let daysLeft = $state(Math.max(0, Math.ceil((target - Date.now()) / 86_400_000)));
@@ -43,7 +44,9 @@
 		{/if}
 		<div class="quick">
 			<a class="quick-rsvp" href="/#rsvp">RSVP</a>
-			<a class="quick-reg" href={REGISTRY_URL} target="_blank" rel="noopener">Registry ↗</a>
+			<a class="quick-reg" href={REGISTRY_URL} target="_blank" rel="noopener">
+				Registry <Icon name="out" />
+			</a>
 		</div>
 	</div>
 </header>
