@@ -9,6 +9,8 @@
 	import '@fontsource/cormorant-garamond/600-italic.css';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
+	import displayFont from '@fontsource/bodoni-moda/files/bodoni-moda-latin-400-normal.woff2?url';
+	import bodyFont from '@fontsource/cormorant-garamond/files/cormorant-garamond-latin-500-normal.woff2?url';
 	import { page } from '$app/state';
 	import { COUPLE, VENUE, WEDDING } from '$lib/config';
 	import Nav from '$lib/components/Nav.svelte';
@@ -22,6 +24,8 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<link rel="preload" as="font" type="font/woff2" href={displayFont} crossorigin="anonymous" />
+	<link rel="preload" as="font" type="font/woff2" href={bodyFont} crossorigin="anonymous" />
 	<title>{title}</title>
 	<meta name="description" content={description} />
 	<meta property="og:site_name" content="{COUPLE.first} & {COUPLE.partnerFirst}" />
