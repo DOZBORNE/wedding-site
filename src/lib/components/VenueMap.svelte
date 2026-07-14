@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { VENUE } from '$lib/config';
 	import { onMount } from 'svelte';
-	import 'maplibre-gl/dist/maplibre-gl.css';
 
 	let container = $state<HTMLDivElement>();
 	let failed = $state(false);
@@ -43,10 +42,16 @@
 
 	onMount(() => {
 		let map: import('maplibre-gl').Map | undefined;
-		(async () => {
+		let io: IntersectionObserver | undefined;
+
+		// ~250KB of map runtime — only fetched once the reader nears the map
+		const init = async () => {
 			try {
-				if (!container) return;
-				const maplibre = (await import('maplibre-gl')).default;
+				if (!container || map) return;
+				const [{ default: maplibre }] = await Promise.all([
+					import('maplibre-gl'),
+					import('maplibre-gl/dist/maplibre-gl.css')
+				]);
 				map = new maplibre.Map({
 					container,
 					style: 'https://tiles.openfreemap.org/styles/liberty',
@@ -74,8 +79,26 @@
 			} catch {
 				failed = true;
 			}
-		})();
-		return () => map?.remove();
+		};
+
+		try {
+			io = new IntersectionObserver(
+				(entries) => {
+					if (entries.some((e) => e.isIntersecting)) {
+						io?.disconnect();
+						init();
+					}
+				},
+				{ rootMargin: '600px' }
+			);
+			if (container) io.observe(container);
+		} catch {
+			init();
+		}
+		return () => {
+			io?.disconnect();
+			map?.remove();
+		};
 	});
 </script>
 

@@ -182,7 +182,8 @@ h4 {
 	}
 }
 
-/* procedural ivy overlays */
+/* procedural ivy overlays — no filters here: SVG filters force full
+   re-rasterization every animation frame and wreck scroll performance */
 svg.vines {
 	position: absolute;
 	inset: 0;
@@ -191,7 +192,12 @@ svg.vines {
 	overflow: visible;
 	pointer-events: none;
 	z-index: 3;
-	filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35));
+}
+
+/* vines (and their hosts) sleep while off-screen */
+.ivy-paused,
+.ivy-paused * {
+	animation-play-state: paused !important;
 }
 
 .vine-h {

@@ -148,17 +148,26 @@
 		display: grid;
 		place-items: center;
 		opacity: 0;
-		filter: blur(8px);
+		filter: blur(7px);
 		transform: scale(1.04);
+		/* hidden plates leave the compositor entirely once faded out */
+		visibility: hidden;
 		transition:
 			opacity 0.6s ease,
 			filter 0.6s ease,
-			transform 0.6s ease;
+			transform 0.6s ease,
+			visibility 0s 0.6s;
 	}
 	.plate.active {
 		opacity: 1;
 		filter: blur(0);
 		transform: none;
+		visibility: visible;
+		transition:
+			opacity 0.6s ease,
+			filter 0.6s ease,
+			transform 0.6s ease,
+			visibility 0s;
 	}
 	.plate img {
 		position: absolute;

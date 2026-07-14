@@ -102,8 +102,9 @@ function makeOverlay(el: HTMLElement): SVGSVGElement {
 }
 
 /**
- * Grow once when the element first becomes visible (animated), then
- * redraw instantly on any later resize.
+ * Grow once when the element first becomes visible (animated), redraw
+ * instantly on later resizes — and pause all animation while off-screen
+ * so idle vines cost nothing.
  */
 function observed(el: Element, grow: (animate: boolean) => boolean) {
 	let grown = false;
@@ -120,12 +121,11 @@ function observed(el: Element, grow: (animate: boolean) => boolean) {
 	try {
 		io = new IntersectionObserver(
 			(entries) => {
-				if (entries.some((e) => e.isIntersecting) && !grown) {
-					if (grow(true)) grown = true;
-					if (grown) io?.disconnect();
-				}
+				const visible = entries.some((e) => e.isIntersecting);
+				if (visible && !grown && grow(true)) grown = true;
+				el.classList.toggle('ivy-paused', !visible);
 			},
-			{ threshold: 0.15 }
+			{ rootMargin: '150px', threshold: 0 }
 		);
 		io.observe(el);
 		ro = new ResizeObserver(() => {
