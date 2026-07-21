@@ -35,8 +35,8 @@
 				<p>
 					These messages are sent for the private wedding of {COUPLE.first} {COUPLE.last} and {COUPLE.partnerFirst}
 					{COUPLE.partnerLast}, hosted at
-					<a href="/">jesslovesdev.com</a>. The messaging program is operated by
-					<a href={BUSINESS_URL} rel="noopener">{BUSINESS}</a> (Devin Osborne).
+					<a href="/">jesslovesdev.com</a>. The messaging program is operated by Devin Osborne (trade
+					name <a href={BUSINESS_URL} rel="noopener">{BUSINESS}</a>).
 				</p>
 			</section>
 
