@@ -23,7 +23,8 @@ renders as a painted placeholder plate.
 
 - `wed_parties` — one row per invitation (auto-generated 6-char code, household email/phone).
 - `wed_guests` — the seats you allocate: named guests plus optional plus-one slots. Each guest
-  may carry its own email/phone (`Name | email | phone` lines in admin); `*` marks a plus-one.
+  may carry its own email/phone, entered as structured rows in `/admin` (with paste-from-
+  spreadsheet fill); a `+1` toggle marks an unclaimed plus-one seat.
 - `wed_messages` — a log of every email/text sent (idempotent reminders + a delivery record).
 - **Access:** a name lookup reveals only family names; opening a party requires the invite
   **code** (or a `/rsvp?code=XXXXXX` deep link). RSVP state is shared across the whole party

@@ -38,7 +38,10 @@ Keep `rsvpDeadlineLabel` (display) and `rsvpDeadlineISO` (enforced) in sync.
 ## Admin — `/admin`
 
 Password from `ADMIN_PASSWORD`. You can:
-- Add/edit parties. Guest lines accept `Name | email | phone`; `*` marks a plus-one slot.
+- Add/edit parties. Guests are structured rows (name / email / phone / `+1` toggle for a
+  plus-one slot); pasting a multi-line or tab-separated list into a name field fans it out
+  into rows. Edits diff against the stored list, so renaming or re-contacting a guest never
+  resets their RSVP. New-party drafts persist in the browser until saved.
   Per-guest email/phone is **optional** — leave it off to just text the household contact.
 - **Send reminders** — emails/texts every party that hasn't responded (skips anyone
   reminded in the last 48h). Reaches household + per-guest contacts.

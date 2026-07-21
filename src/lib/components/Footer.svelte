@@ -7,6 +7,11 @@
 	<div class="ornament"><span>❦</span></div>
 	<p>see you at the wedding — {VENUE.name}, {VENUE.shortAddress}</p>
 	<p class="dim">{WEDDING.dateLabel} · {COUPLE.hashtag}</p>
+	<nav class="legal">
+		<a href="/sms-terms">Text message terms</a>
+		<span aria-hidden="true">·</span>
+		<a href="https://osbornex.com/privacy.html" rel="noopener">Privacy</a>
+	</nav>
 </footer>
 
 <style>
@@ -38,5 +43,25 @@
 	}
 	.dim {
 		opacity: 0.65;
+	}
+	.legal {
+		margin-top: 0.6rem;
+		display: flex;
+		gap: 0.6rem;
+		align-items: center;
+		font-size: 0.82rem;
+	}
+	.legal a {
+		color: var(--ink-faint);
+		text-decoration: none;
+		text-underline-offset: 3px;
+	}
+	.legal a:hover {
+		color: var(--candle);
+		text-decoration: underline;
+	}
+	.legal span {
+		color: var(--ink-faint);
+		opacity: 0.5;
 	}
 </style>
