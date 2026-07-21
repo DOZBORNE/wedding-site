@@ -226,13 +226,15 @@
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
-		filter: grayscale(1) contrast(1.05) brightness(0.85);
+		/* full color; just dim it a touch to settle into the dark hero */
+		filter: brightness(0.82) saturate(0.96);
 	}
 	.duotone {
 		position: absolute;
 		inset: 0;
-		background: linear-gradient(180deg, rgba(201, 159, 148, 0.5), var(--claret) 90%);
-		mix-blend-mode: color;
+		/* duotone overlay toggled OFF to preview the raw photo */
+		/* background: linear-gradient(180deg, rgba(201, 159, 148, 0.5), var(--claret) 90%);
+		mix-blend-mode: color; */
 	}
 	.hero-arch.has-photo::after {
 		content: '';

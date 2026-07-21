@@ -1,65 +1,50 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { db, GUEST_COLS } from '$lib/server/supabase';
-import type { PublicParty } from '$lib/types';
+import { db } from '$lib/server/supabase';
 
-const PARTY_COLS = `id, display_name, responded_at, wed_guests ( ${GUEST_COLS} )`;
-
-function publicParty(row: Record<string, unknown>): PublicParty {
-	const guests = (row.wed_guests as PublicParty['guests']) ?? [];
-	return {
-		id: row.id as string,
-		display_name: row.display_name as string,
-		responded_at: (row.responded_at as string) ?? null,
-		guests: guests.sort((a, b) => a.sort_order - b.sort_order)
-	};
-}
-
-/** Find a party by invite code or by a guest's name. */
+/**
+ * Find candidate parties by a guest's name. Returns ONLY the family name + id —
+ * never the guest list. Opening a party requires the invite code (see /api/rsvp/open),
+ * so a name guess can't read or overwrite anyone's RSVP.
+ */
 export const POST: RequestHandler = async ({ request }) => {
 	const body = await request.json().catch(() => ({}));
-	const code = String(body.code ?? '').trim();
 	const query = String(body.query ?? '').trim();
 
-	if (code) {
-		const { data } = await db()
-			.from('wed_parties')
-			.select(PARTY_COLS)
-			.eq('code', code.toUpperCase())
-			.maybeSingle();
-		return json({ parties: data ? [publicParty(data)] : [] });
+	if (query.length < 3) {
+		return json(
+			{ parties: [], error: 'Please enter at least three letters of a name.' },
+			{ status: 400 }
+		);
 	}
 
-	if (query.length < 3) {
-		return json({ parties: [], error: 'Please enter at least three letters of a name.' }, { status: 400 });
-	}
+	const like = `%${query.replace(/[%_]/g, '')}%`;
 
 	// match on guest names first, then party display names
-	const like = `%${query.replace(/[%_]/g, '')}%`;
 	const { data: guestHits } = await db()
 		.from('wed_guests')
 		.select('party_id')
 		.ilike('name', like)
-		.limit(10);
+		.limit(20);
 	const ids = [...new Set((guestHits ?? []).map((g) => g.party_id))];
 
 	const { data: byName } = await db()
 		.from('wed_parties')
-		.select(PARTY_COLS)
+		.select('id, display_name')
 		.ilike('display_name', like)
 		.limit(5);
 
-	let byGuest: typeof byName = [];
+	let byGuest: { id: string; display_name: string }[] = [];
 	if (ids.length) {
-		const res = await db().from('wed_parties').select(PARTY_COLS).in('id', ids).limit(5);
+		const res = await db().from('wed_parties').select('id, display_name').in('id', ids).limit(8);
 		byGuest = res.data ?? [];
 	}
 
 	const seen = new Set<string>();
-	const parties = [...(byGuest ?? []), ...(byName ?? [])]
-		.filter((p) => (seen.has(p.id as string) ? false : (seen.add(p.id as string), true)))
-		.slice(0, 5)
-		.map(publicParty);
+	const parties = [...byGuest, ...(byName ?? [])]
+		.filter((p) => (seen.has(p.id) ? false : (seen.add(p.id), true)))
+		.slice(0, 8)
+		.map((p) => ({ id: p.id, display_name: p.display_name }));
 
 	return json({ parties });
 };

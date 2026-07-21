@@ -12,9 +12,12 @@ function normalize(phone: string): string {
 	return digits;
 }
 
-/** Plain fetch to the Twilio REST API — no SDK needed for one endpoint. */
-export async function sendSms(to: string, body: string): Promise<boolean> {
-	if (!smsEnabled() || !to) return false;
+/**
+ * Plain fetch to the Twilio REST API — no SDK needed for one endpoint.
+ * Returns the Twilio message SID on success (may be ''), or null if not sent.
+ */
+export async function sendSms(to: string, body: string): Promise<string | null> {
+	if (!smsEnabled() || !to) return null;
 	const sid = env.TWILIO_ACCOUNT_SID!;
 	const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
 		method: 'POST',
@@ -28,5 +31,7 @@ export async function sendSms(to: string, body: string): Promise<boolean> {
 			Body: body
 		})
 	});
-	return res.ok;
+	if (!res.ok) return null;
+	const data = (await res.json().catch(() => ({}))) as { sid?: string };
+	return data.sid ?? '';
 }

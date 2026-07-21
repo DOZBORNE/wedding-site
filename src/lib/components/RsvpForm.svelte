@@ -14,17 +14,22 @@
 		meal: string;
 		dietary: string;
 	};
+	/** A redacted lookup result — family name only, no guests until the code unlocks it. */
+	type Candidate = { id: string; display_name: string };
 
 	// deliberately seed from the prop's initial value — a deep-linked party
 	// is server-rendered straight into the form stage
 	// svelte-ignore state_referenced_locally
 	const initialParty = party;
-	let stage = $state<'lookup' | 'form' | 'done'>(initialParty ? 'form' : 'lookup');
+	let stage = $state<'lookup' | 'code' | 'form' | 'done'>(initialParty ? 'form' : 'lookup');
 	let query = $state('');
+	let code = $state('');
 	let searching = $state(false);
+	let opening = $state(false);
 	let submitting = $state(false);
 	let errorMsg = $state('');
-	let matches = $state<PublicParty[]>([]);
+	let matches = $state<Candidate[]>([]);
+	let pending = $state<Candidate | null>(null);
 	let selected = $state<PublicParty | null>(initialParty);
 	let rows = $state<Row[]>(initialParty ? toRows(initialParty) : []);
 	let songRequests = $state('');
@@ -49,6 +54,15 @@
 		errorMsg = '';
 	}
 
+	/** Step 1 — a chosen family now needs its invite code to open. */
+	function pick(c: Candidate) {
+		pending = c;
+		code = '';
+		matches = [];
+		errorMsg = '';
+		stage = 'code';
+	}
+
 	async function lookup(e: SubmitEvent) {
 		e.preventDefault();
 		errorMsg = '';
@@ -67,7 +81,7 @@
 				errorMsg =
 					'We couldn’t find that name. Try the name exactly as it appears on your invitation — or reach out to us directly.';
 			} else if (data.parties.length === 1) {
-				choose(data.parties[0]);
+				pick(data.parties[0]);
 			} else {
 				matches = data.parties;
 			}
@@ -75,6 +89,31 @@
 			errorMsg = 'Something went wrong — please check your connection and try again.';
 		} finally {
 			searching = false;
+		}
+	}
+
+	/** Step 2 — verify the code server-side; on success the full party comes back. */
+	async function openParty(e: SubmitEvent) {
+		e.preventDefault();
+		if (!pending) return;
+		errorMsg = '';
+		opening = true;
+		try {
+			const res = await fetch('/api/rsvp/open', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ partyId: pending.id, code })
+			});
+			const data = await res.json();
+			if (!res.ok) {
+				errorMsg = data.error ?? 'That code did not work — please try again.';
+			} else {
+				choose(data.party);
+			}
+		} catch {
+			errorMsg = 'Something went wrong — please check your connection and try again.';
+		} finally {
+			opening = false;
 		}
 	}
 
@@ -138,9 +177,9 @@
 			<div class="matches">
 				<div class="matches-label">Which party is yours?</div>
 				{#each matches as m (m.id)}
-					<button type="button" class="match" onclick={() => choose(m)}>
+					<button type="button" class="match" onclick={() => pick(m)}>
 						<b>{m.display_name}</b>
-						<i>{m.guests.map((g) => g.name || 'guest').join(' · ')}</i>
+						<i>enter your code to open</i>
 					</button>
 				{/each}
 			</div>
@@ -148,6 +187,42 @@
 		{#if errorMsg}<p class="error">{errorMsg}</p>{/if}
 		<button class="claret-btn" type="submit" disabled={searching}>
 			{searching ? 'Searching…' : 'Find my invitation'}
+		</button>
+	</form>
+{:else if stage === 'code' && pending}
+	<h2 class="card-title">Kindly respond</h2>
+	<p class="sub">
+		Opening <b>{pending.display_name}</b> — enter the code from your invitation or text message.
+	</p>
+	<form class="rsvp-form" onsubmit={openParty}>
+		<div class="field">
+			<label for="rsvp-code">Invitation code</label>
+			<input
+				id="rsvp-code"
+				type="text"
+				bind:value={code}
+				placeholder="e.g. K7M2PQ"
+				autocapitalize="characters"
+				autocomplete="off"
+				spellcheck="false"
+				required
+				minlength="4"
+			/>
+		</div>
+		{#if errorMsg}<p class="error">{errorMsg}</p>{/if}
+		<button class="claret-btn" type="submit" disabled={opening}>
+			{opening ? 'Opening…' : 'Open our invitation'}
+		</button>
+		<button
+			type="button"
+			class="link-btn"
+			onclick={() => {
+				pending = null;
+				errorMsg = '';
+				stage = 'lookup';
+			}}
+		>
+			← search a different name
 		</button>
 	</form>
 {:else if stage === 'form' && selected}
@@ -280,6 +355,20 @@
 		margin: 0;
 		color: #7a1f28;
 		font-style: italic;
+	}
+	.link-btn {
+		background: none;
+		border: none;
+		color: var(--chocolate);
+		font-family: var(--body);
+		font-style: italic;
+		font-size: 0.95rem;
+		cursor: pointer;
+		justify-self: center;
+		padding: 0.2rem;
+	}
+	.link-btn:hover {
+		color: var(--claret);
 	}
 	.matches {
 		display: grid;

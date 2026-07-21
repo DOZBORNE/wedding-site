@@ -1,8 +1,13 @@
 <script lang="ts">
 	import { CHAPTERS, TIMELINE } from '$lib/config';
 	import { reveal } from '$lib/reveal';
+	import { fade } from 'svelte/transition';
 	import MirrorFrame from './MirrorFrame.svelte';
 	import SectionHead from './SectionHead.svelte';
+
+	// which plate each chapter is currently showing — the paragraph follows it
+	// when that plate has its own body, otherwise the chapter body stays put
+	let activeIndex = $state<number[]>(CHAPTERS.map(() => 0));
 
 	// Each chapter is a tall scroll region with its content pinned (sticky)
 	// inside: the page keeps scrolling but the chapter holds still while the
@@ -71,12 +76,17 @@
 								ivy={i !== 1}
 								seed={41 + i}
 								progress={progress[i]}
+								bind:index={activeIndex[i]}
 							/>
 						</div>
 						<div class="story-copy">
 							<div class="ch-num">{chapter.numeral}</div>
 							<h3>{chapter.title}</h3>
-							<p class="drop">{chapter.body}</p>
+							{#key chapter.plates[activeIndex[i]]?.body || chapter.body}
+								<p class="drop" in:fade={{ duration: 400 }}>
+									{chapter.plates[activeIndex[i]]?.body || chapter.body}
+								</p>
+							{/key}
 						</div>
 					</div>
 				</div>

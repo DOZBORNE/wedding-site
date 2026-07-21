@@ -6,6 +6,11 @@ export type Guest = {
 	meal: string;
 	dietary: string;
 	sort_order: number;
+	// Optional per-person contact — only populated for admin/server reads, never sent to guest browsers.
+	first_name?: string;
+	last_name?: string;
+	email?: string;
+	phone?: string;
 };
 
 export type PublicParty = {

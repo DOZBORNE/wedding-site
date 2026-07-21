@@ -1,11 +1,20 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { MEALS } from '$lib/config';
+	import type { Guest } from '$lib/types';
 
 	let { data, form } = $props();
 
-	const guestsToLines = (guests: { name: string; is_plus_one: boolean }[]) =>
-		guests.map((g) => (g.is_plus_one ? (g.name ? `${g.name} *` : '*') : g.name)).join('\n');
+	const guestsToLines = (guests: Guest[]) =>
+		guests
+			.map((g) => {
+				const name = g.is_plus_one ? (g.name ? `${g.name} *` : '*') : g.name;
+				const parts = [name];
+				if (g.email || g.phone) parts.push(g.email ?? '');
+				if (g.phone) parts.push(g.phone ?? '');
+				return parts.join(' | ');
+			})
+			.join('\n');
 
 	let stats = $derived.by(() => {
 		if (!data.authed) return null;
@@ -16,6 +25,7 @@
 		);
 		return {
 			parties: data.parties.length,
+			invited: data.parties.filter((p) => p.invited_at).length,
 			responded: data.parties.filter((p) => p.responded_at).length,
 			guests: guests.length,
 			accepted: accepted.length,
@@ -50,6 +60,7 @@
 		{#if stats}
 			<section class="stats">
 				<div><b>{stats.parties}</b><span>parties</span></div>
+				<div><b>{stats.invited}</b><span>invited</span></div>
 				<div><b>{stats.responded}</b><span>responded</span></div>
 				<div><b>{stats.guests}</b><span>guests invited</span></div>
 				<div class="good"><b>{stats.accepted}</b><span>accepting</span></div>
@@ -60,6 +71,55 @@
 				{/each}
 			</section>
 		{/if}
+
+		<section class="panel">
+			<h2>Invitations</h2>
+			<p class="hint">
+				Sends the invitation email to each party's contact (plus any per-guest contacts).
+				Defaults to parties <b>not yet invited</b>, so re-running won't double-send.
+				{#if data.smsConfigured}Texts go to parties with a phone number.{:else}
+					<i>SMS is off until Twilio is configured.</i>{/if}
+			</p>
+			<form method="POST" action="?/invite" use:enhance>
+				<label class="inline">
+					Who
+					<select name="audience">
+						<option value="uninvited">Parties not yet invited</option>
+						<option value="all">Everyone (re-send)</option>
+					</select>
+				</label>
+				{#if data.smsConfigured}
+					<label class="check"><input type="checkbox" name="sms" checked /> also send texts</label>
+				{/if}
+				<button
+					class="claret-btn"
+					type="submit"
+					onclick={(e) => {
+						if (!confirm('Send invitations now?')) e.preventDefault();
+					}}
+				>
+					Send invitations
+				</button>
+			</form>
+			{#if form && 'inviteResult' in form && form.inviteResult}
+				<p class="ok">
+					Invited {form.inviteResult.parties} parties — {form.inviteResult.emails} emails,
+					{form.inviteResult.texts} texts.
+				</p>
+				{#if form.inviteResult.failed}
+					<p class="err">
+						{form.inviteResult.failed} email(s) failed. First error: {form.inviteResult.error}
+					</p>
+				{/if}
+				{#if form.inviteResult.parties === 0}
+					<p class="hint">
+						<i>No parties matched — either everyone's already invited, or no parties have a contact
+						email. Add emails, or choose "Everyone (re-send)".</i>
+					</p>
+				{/if}
+			{/if}
+			{#if form && 'inviteError' in form && form.inviteError}<p class="err">{form.inviteError}</p>{/if}
+		</section>
 
 		<section class="panel">
 			<h2>Reminders</h2>
@@ -86,9 +146,64 @@
 				<p class="ok">
 					Nudged {form.remindResult.parties} parties — {form.remindResult.emails} emails,
 					{form.remindResult.texts} texts.
+					{#if form.remindResult.skipped}
+						({form.remindResult.skipped} skipped — reminded in the last 48h.){/if}
 				</p>
 			{/if}
 			{#if form && 'remindError' in form && form.remindError}<p class="err">{form.remindError}</p>{/if}
+		</section>
+
+		<section class="panel">
+			<h2>Send an update</h2>
+			<p class="hint">
+				Emails (and texts) a message to a group of parties — venue changes, booking news, schedule.
+				Goes to each party's contact plus any per-guest contacts.
+				{#if !data.smsConfigured}<i>SMS is off until Twilio is configured.</i>{/if}
+			</p>
+			<form method="POST" action="?/broadcast" use:enhance class="party-form">
+				<label>Subject <input name="subject" placeholder="A small change to our plans" required /></label>
+				<label>
+					Message
+					<textarea name="message" rows="4" placeholder="Write your update here…" required></textarea>
+				</label>
+				<label>
+					Who receives it
+					<select name="audience">
+						<option value="all">Everyone</option>
+						<option value="responded">Only parties who responded</option>
+						<option value="attending">Only parties attending</option>
+						<option value="pending">Only parties who haven't responded</option>
+					</select>
+				</label>
+				<label>
+					How
+					<select name="channel">
+						<option value="email">Email only</option>
+						{#if data.smsConfigured}
+							<option value="sms">Text only</option>
+							<option value="both">Email &amp; text</option>
+						{/if}
+					</select>
+				</label>
+				<button
+					class="claret-btn"
+					type="submit"
+					onclick={(e) => {
+						if (!confirm('Send this update now?')) e.preventDefault();
+					}}
+				>
+					Send update
+				</button>
+			</form>
+			{#if form && 'broadcastResult' in form && form.broadcastResult}
+				<p class="ok">
+					Sent to {form.broadcastResult.recipients} parties — {form.broadcastResult.emails} emails,
+					{form.broadcastResult.texts} texts.
+				</p>
+			{/if}
+			{#if form && 'broadcastError' in form && form.broadcastError}
+				<p class="err">{form.broadcastError}</p>
+			{/if}
 		</section>
 
 		<section class="panel">
@@ -102,8 +217,13 @@
 					<label>Contact email <input name="contact_email" type="email" /></label>
 					<label>Contact phone <input name="contact_phone" placeholder="+1205…" /></label>
 					<label>
-						Guests — one per line; end a line with * for a plus-one slot (or a line with just *)
-						<textarea name="guests" rows="4" placeholder={'Jordan Smith\nAlex Smith\n*'} required
+						Guests — one per line. Optional contact after pipes: <code>Name | email | phone</code>.
+						End a line with * for a plus-one slot (or a line with just *).
+						<textarea
+							name="guests"
+							rows="4"
+							placeholder={'Jordan Smith | jordan@example.com | +12055551234\nAlex Smith\n*'}
+							required
 						></textarea>
 					</label>
 					<label>Private notes <input name="notes" /></label>
@@ -118,6 +238,7 @@
 						<span class="p-meta">
 							code <code>{party.code}</code>
 							· {party.guests.length} guests
+							{#if !party.invited_at}· <span class="pending-inline">not invited</span>{/if}
 							{#if party.responded_at}
 								· <span class="ok-inline">responded</span>
 							{:else}
@@ -155,7 +276,7 @@
 							<label>Contact email <input name="contact_email" type="email" value={party.contact_email} /></label>
 							<label>Contact phone <input name="contact_phone" value={party.contact_phone} /></label>
 							<label>
-								Guest list
+								Guest list — <code>Name | email | phone</code>, * for a plus-one
 								<textarea name="guests" rows="4">{guestsToLines(party.guests)}</textarea>
 							</label>
 							<label class="check">
@@ -324,6 +445,22 @@
 		gap: 0.5rem;
 		font-size: 0.95rem;
 		color: var(--ink-muted);
+	}
+	.inline {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.9rem;
+		color: var(--ink-muted);
+		margin-right: 1rem;
+	}
+	.inline select {
+		background: transparent;
+		border: 1px solid var(--line);
+		color: var(--ink-on-dark);
+		padding: 0.4rem 0.6rem;
+		font-family: var(--body);
+		font-size: 0.95rem;
 	}
 	.party {
 		border-top: 1px solid var(--line);

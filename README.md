@@ -21,17 +21,23 @@ renders as a painted placeholder plate.
 
 ## RSVP model
 
-- `wed_parties` — one row per invitation (auto-generated 6-char code, contact email/phone).
-- `wed_guests` — the seats you allocate: named guests plus optional plus-one slots (`*` lines in admin).
-- Guests find their party by name (or land on `/rsvp?code=XXXXXX` from a reminder link) and can
-  only answer for the seats they were given. Submitting sends a Resend confirmation email.
+- `wed_parties` — one row per invitation (auto-generated 6-char code, household email/phone).
+- `wed_guests` — the seats you allocate: named guests plus optional plus-one slots. Each guest
+  may carry its own email/phone (`Name | email | phone` lines in admin); `*` marks a plus-one.
+- `wed_messages` — a log of every email/text sent (idempotent reminders + a delivery record).
+- **Access:** a name lookup reveals only family names; opening a party requires the invite
+  **code** (or a `/rsvp?code=XXXXXX` deep link). RSVP state is shared across the whole party
+  and editable until `WEDDING.rsvpDeadlineISO`, which is enforced server-side.
+
+See **`docs/MESSAGING.md`** for the full model, security notes, and the Resend/Twilio runbook.
 
 ## Admin — `/admin`
 
 Password from `ADMIN_PASSWORD`. Dashboard (counts + meals), party management, guest-list editing,
-guestbook moderation, and a **Send reminders now** button (email, plus SMS when Twilio is configured).
+guestbook moderation, a **Send reminders** button (skips anyone reminded in the last 48h), and a
+**Send an update** broadcast (venue/booking/schedule news to a chosen audience — email and/or SMS).
 
-Reminder emails/texts deep-link each party to `/rsvp?code=…`.
+Reminder and update messages deep-link each party to `/rsvp?code=…`.
 
 ### Optional cron reminders
 

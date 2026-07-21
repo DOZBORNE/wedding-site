@@ -16,4 +16,9 @@ export function db(): SupabaseClient {
 	return client;
 }
 
+/** Public columns — safe to send to a guest's browser. No contact info. */
 export const GUEST_COLS = 'id, name, is_plus_one, attending, meal, dietary, sort_order';
+
+/** Server-only columns — adds per-person contact info for admin + messaging. */
+export const GUEST_COLS_FULL =
+	'id, name, first_name, last_name, email, phone, is_plus_one, attending, meal, dietary, sort_order';
