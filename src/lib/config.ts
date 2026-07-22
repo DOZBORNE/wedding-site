@@ -65,10 +65,10 @@ export const CHAPTERS: StoryChapter[] = [
         tone: "blush",
       },
       {
-        src: "",
+        src: "/photos/dev_pumpkin_patch.jpg",
         caption: "where it started",
         tone: "olive",
-        body: "test body",
+        body: "There was always time for fun and laughter.",
       },
     ],
   },
@@ -77,13 +77,21 @@ export const CHAPTERS: StoryChapter[] = [
     title: "The Years Between",
     body: "First trips, small rituals, the life we built in Birmingham. The middle chapters are the best ones — and most of the engagement photos live here, framed like plates in an old book.",
     plates: [
-      { src: "", caption: "the years between", tone: "olive" },
+      {
+        src: "/photos/dev_jess_june.jpg",
+        caption: "coffee st(h)op",
+        tone: "olive",
+      },
       {
         src: "/photos/jess_dev_jess_bday.jpg",
-        caption: "somewhere on the road",
+        caption: "jess turns 25!",
         tone: "candle",
       },
-      { src: "", caption: "home", tone: "mauve" },
+      {
+        src: "/photos/dev_jess_christmas.jpg",
+        caption: "christmas",
+        tone: "mauve",
+      },
     ],
   },
   {
@@ -91,26 +99,60 @@ export const CHAPTERS: StoryChapter[] = [
     title: "The Question",
     body: "The plan, the nerves, the yes. And now: a garden, a lake, a pavilion, and everyone we love in one place. The next chapter is dated November 6, 2026.",
     plates: [
-      { src: "", caption: "the proposal", tone: "candle" },
-      { src: "", caption: "she said yes", tone: "blush" },
+      { src: "/photos/proposal.jpg", caption: "the proposal", tone: "candle" },
+      {
+        src: "/photos/proposal-after.jpg",
+        caption: "she said yes",
+        tone: "blush",
+      },
     ],
   },
 ];
 
 export const TIMELINE = [
   { label: "First met", value: "2024" },
-  { label: "She said yes", value: "2025" }, // TODO: confirm year
+  { label: "First date", value: "2025" }, // TODO: confirm year
   { label: "The wedding", value: "2026" },
 ];
 
 /** Gallery — engagement photos. Add files to /static/photos and set src: '/photos/01.jpg' */
 export const GALLERY = [
-  { src: "", caption: "the proposal", tone: "blush", tall: true },
-  { src: "", caption: "golden hour", tone: "olive", tall: false },
-  { src: "", caption: "the ring", tone: "candle", tall: true },
-  { src: "", caption: "downtown", tone: "mauve", tall: false },
-  { src: "", caption: "the garden", tone: "blush", tall: true },
-  { src: "", caption: "us", tone: "olive", tall: false },
+  {
+    src: "/photos/chicago.jpg",
+    caption: "when i'm back in chicago...",
+    tone: "blush",
+    tall: true,
+  },
+  {
+    src: "/photos/jordan_engagement.jpg",
+    caption: "engagement party part II",
+    tone: "olive",
+    tall: false,
+  },
+  {
+    src: "/photos/dev_jess_mountains_creek.jpg",
+    caption: "smokey mountains ;)",
+    tone: "candle",
+    tall: true,
+  },
+  {
+    src: "/photos/dev_jess_jordan_flowers.jpg",
+    caption: "jordan explorin",
+    tone: "mauve",
+    tall: false,
+  },
+  {
+    src: "/photos/dev_jess_shooting.jpg",
+    caption: "shootin' sum guns y'all",
+    tone: "blush",
+    tall: true,
+  },
+  {
+    src: "/photos/dev_jess_sunset.jpg",
+    caption: "explorin! wadi rum",
+    tone: "olive",
+    tall: false,
+  },
 ];
 
 /** Hero photo — your best engagement shot, shown in claret duotone. */

@@ -245,8 +245,10 @@
 		left: 0;
 		right: 0;
 		text-align: center;
-		color: var(--ink-faint);
-		font-size: 0.88rem;
+		color: var(--ink-muted);
+		font-size: 1.02rem;
+		font-weight: 600;
+		letter-spacing: 0.01em;
 	}
 	.lightbox {
 		background: rgba(20, 14, 11, 0.94);
@@ -262,15 +264,22 @@
 	.lightbox:not([open]) {
 		display: none;
 	}
+	/* constrain every photo to the SAME height so they read as one size
+	   in the lightbox, regardless of the source photo's aspect ratio.
+	   width follows the image; max-width guards very wide/landscape shots
+	   and small screens. */
 	.lightbox img {
-		max-width: min(92vw, 1100px);
-		max-height: 80vh;
+		width: auto;
+		height: min(78vh, 660px);
+		max-width: 94vw;
 		object-fit: contain;
 		border: 1px solid rgba(230, 217, 198, 0.3);
 	}
 	.lightbox p {
-		color: var(--ink-muted);
+		color: var(--parchment);
 		font-family: var(--body);
+		font-size: 1.2rem;
+		font-weight: 600;
 		margin: 1rem 0 0;
 	}
 </style>

@@ -159,7 +159,9 @@
 		transform: translateX(120%);
 	}
 	.caption {
-		color: var(--ink-faint);
-		font-size: 0.9rem;
+		color: var(--ink-muted);
+		font-size: 1.02rem;
+		font-weight: 600;
+		letter-spacing: 0.01em;
 	}
 </style>

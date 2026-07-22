@@ -2,7 +2,7 @@
 	import Hero from '$lib/components/Hero.svelte';
 	import Story from '$lib/components/Story.svelte';
 	import Gallery from '$lib/components/Gallery.svelte';
-	import WeddingParty from '$lib/components/WeddingParty.svelte';
+	// import WeddingParty from '$lib/components/WeddingParty.svelte'; // temporarily disabled
 	import Setting from '$lib/components/Setting.svelte';
 	import Day from '$lib/components/Day.svelte';
 	import Travel from '$lib/components/Travel.svelte';
@@ -17,7 +17,7 @@
 <Hero />
 <Story />
 <Gallery />
-<WeddingParty />
+<!-- <WeddingParty /> temporarily disabled -->
 <Setting />
 <Day />
 <Travel />
