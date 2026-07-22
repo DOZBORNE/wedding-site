@@ -68,18 +68,18 @@ export const CHAPTERS: StoryChapter[] = [
         src: "/photos/dev_pumpkin_patch.jpg",
         caption: "where it started",
         tone: "olive",
-        body: "There was always time for fun and laughter.",
+        body: "Time and again, lauging to no end. We spent most of our early days together young and very much in love.",
       },
     ],
   },
   {
     numeral: "Chapter II",
     title: "The Inbetween",
-    body: "First trips, small rituals, the life we built in Birmingham. The middle chapters are the best ones — and most of the engagement photos live here, framed like plates in an old book.",
+    body: "First trips, small rituals, the life we built in Birmingham. The middle chapters are the best ones! We spent our time falling in love with one another. Travelling when we could, exploring the world with a stranger. These sweet days were filled with curiousity and a vibrant love for what was becoming a best friend.",
     plates: [
       {
         src: "/photos/dev_jess_june.jpg",
-        caption: "coffee st(h)op",
+        caption: "coffee s(h)top",
         tone: "olive",
       },
       {
@@ -97,7 +97,7 @@ export const CHAPTERS: StoryChapter[] = [
   {
     numeral: "Chapter III",
     title: "The Question",
-    body: "The plan, the nerves, the yes. And now: a garden, a lake, a pavilion, and everyone we love in one place. The next chapter is dated November 6, 2026.",
+    body: "The plan, the nerves – and eventually – the yes. Devin was very neverous (and stressed) trying to make everything as perfect as possible. But now, it's all over and we're headed for a new life together–forever!",
     plates: [
       { src: "/photos/proposal.jpg", caption: "the proposal", tone: "candle" },
       {
@@ -111,7 +111,7 @@ export const CHAPTERS: StoryChapter[] = [
 
 export const TIMELINE = [
   { label: "First met", value: "2024" },
-  { label: "First date", value: "2025" }, // TODO: confirm year
+  { label: "First date", value: "2025" },
   { label: "The wedding", value: "2026" },
 ];
 
