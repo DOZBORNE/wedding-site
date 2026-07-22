@@ -43,43 +43,38 @@
 
 <figure class="mirror-wrap">
 	{#if ivy}
-		<div class="mirror arch" use:cornerIvy={{ seed }}>
-			{#each plates as plate, i (i)}
-				<div
-					class="plate"
-					class:active={i === index}
-					style={plate.src ? '' : `background:${TONES[plate.tone] ?? TONES.blush}`}
-				>
-					{#if plate.src}
-						<img src={plate.src} alt="{alt} — {plate.caption}" loading="lazy" />
-					{:else}
-						<span class="photo-note">photo · {plate.caption}</span>
-					{/if}
-				</div>
-			{/each}
-			<div class="sheen" class:on={shimmer} aria-hidden="true"></div>
+		<!-- ivy grows on the stage, a sibling of the arch, so it can spill over
+		     the arch's shoulder instead of being cropped by its overflow:hidden -->
+		<div class="mirror-stage" use:cornerIvy={{ seed }}>
+			<div class="mirror arch">
+				{@render plateStack()}
+			</div>
 		</div>
 	{:else}
 		<div class="mirror arch">
-			{#each plates as plate, i (i)}
-				<div
-					class="plate"
-					class:active={i === index}
-					style={plate.src ? '' : `background:${TONES[plate.tone] ?? TONES.blush}`}
-				>
-					{#if plate.src}
-						<img src={plate.src} alt="{alt} — {plate.caption}" loading="lazy" />
-					{:else}
-						<span class="photo-note">photo · {plate.caption}</span>
-					{/if}
-				</div>
-			{/each}
-			<div class="sheen" class:on={shimmer} aria-hidden="true"></div>
+			{@render plateStack()}
 		</div>
 	{/if}
 
 	<figcaption class="caption"><i>{plates[index].caption}</i></figcaption>
 </figure>
+
+{#snippet plateStack()}
+	{#each plates as plate, i (i)}
+		<div
+			class="plate"
+			class:active={i === index}
+			style={plate.src ? '' : `background:${TONES[plate.tone] ?? TONES.blush}`}
+		>
+			{#if plate.src}
+				<img src={plate.src} alt="{alt} — {plate.caption}" loading="lazy" />
+			{:else}
+				<span class="photo-note">photo · {plate.caption}</span>
+			{/if}
+		</div>
+	{/each}
+	<div class="sheen" class:on={shimmer} aria-hidden="true"></div>
+{/snippet}
 
 <style>
 	.mirror-wrap {
@@ -87,6 +82,17 @@
 		display: grid;
 		gap: 0.6rem;
 		justify-items: center;
+	}
+	/* holds the arch + the ivy overlay; not clipped, so vines can cross the
+	   arch edge. Sized identically to the arch so the ivy viewBox lines up. */
+	.mirror-stage {
+		position: relative;
+		width: 100%;
+		aspect-ratio: 3 / 4;
+	}
+	.mirror-stage .mirror {
+		position: absolute;
+		inset: 0;
 	}
 	.mirror {
 		width: 100%;
