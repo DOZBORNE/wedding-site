@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { GuestbookEntry } from '$lib/types';
+	import { tick } from 'svelte';
 	import { reveal } from '$lib/reveal';
 	import SectionHead from './SectionHead.svelte';
 
@@ -21,10 +22,16 @@
 	let errorMsg = $state('');
 	let noteEl = $state<HTMLTextAreaElement>();
 
-	function usePrompt(starter: string) {
+	async function usePrompt(starter: string) {
 		if (!message.trim() || PROMPTS.some((p) => message === p.starter)) message = starter;
 		else message = `${starter}${message}`;
+		// let Svelte write the new value to the DOM *before* we focus. Focusing in
+		// the same frame the value changes leaves iOS Safari painting the old
+		// (empty) text — the note looked like it "lost" what the chip inserted.
+		await tick();
 		noteEl?.focus();
+		const end = noteEl?.value.length ?? 0;
+		noteEl?.setSelectionRange(end, end);
 	}
 
 	async function submit(e: SubmitEvent) {

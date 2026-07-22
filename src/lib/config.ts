@@ -183,15 +183,14 @@ export const TRAVEL = [
   },
   {
     title: "Where to stay",
-    // TODO: confirm hotel blocks and add booking links
-    body: `We're arranging room blocks at hotels near the Riverchase Galleria, five minutes from the gardens — details to follow here soon.`,
+    body: `There's no room block — just book whatever suits you. For hotels, the cluster around the Riverchase Galleria (about five minutes away) is the easiest and closest, with plenty of options at every price point; downtown Birmingham and the Hoover/Vestavia Hills area are both comfortable too. Prefer a home? Airbnb and Vrbo have great stays throughout Hoover, Vestavia Hills, and Homewood, all a short drive from the gardens.`,
   },
 ];
 
 export const FAQ = [
   {
     q: "What should I wear?",
-    a: "This event is as casual as they come, so come as you are! If you'd like to match our evening attire in autumnal tones — think the palette of this site: olive, burgundy, mauve, cream. The ceremony and reception are outdoors in a garden, so choose shoes that can handle grass and gravel paths.",
+    a: "Casual and chill — come as you are! There's no dress code. It's an outdoor garden evening with cozy fall vibes, so wear whatever's comfortable and pick shoes that can handle grass and gravel paths (it gets crisp after sunset, so maybe bring a layer). Totally optional: if you'd like to match our fall palette — olive, burgundy, mauve, cream — we'd love it, but only if you want to.",
   },
   {
     q: "Will the wedding be indoors or outdoors?",

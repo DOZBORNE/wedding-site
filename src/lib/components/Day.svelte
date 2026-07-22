@@ -43,7 +43,14 @@
 
 		<div class="dress" use:reveal>
 			<div class="eyebrow">What to wear</div>
-			<p class="lede">Evening attire in autumnal tones — borrow from our palette:</p>
+			<p class="lede">
+				Casual and chill — come as you are. It's an outdoor garden evening with cozy fall vibes, so
+				wear whatever's comfortable for grass, gravel paths, and a crisp night after sunset.
+			</p>
+			<p class="palette-note">
+				No dress code, promise. But if you'd like to match our fall palette, here's a little
+				inspiration:
+			</p>
 			<div class="palette-row">
 				{#each palette as swatch (swatch.hex)}
 					<div class="swatch" title="{swatch.name} {swatch.hex}">
@@ -145,6 +152,13 @@
 		gap: 0.8rem;
 		justify-items: center;
 	}
+	.palette-note {
+		margin: 0;
+		max-width: 46ch;
+		color: var(--ink-faint);
+		font-style: italic;
+		font-size: 1.02rem;
+	}
 	.palette-row {
 		display: flex;
 		flex-wrap: wrap;
@@ -204,6 +218,9 @@
 	.dir-btns .ghost-btn {
 		padding: 0.8rem 1.5rem;
 		font-size: 0.72rem;
+		/* keep the label and its ↗ on one line — "Google Maps" is long enough
+		   that the arrow was wrapping to the row below on narrow screens */
+		white-space: nowrap;
 	}
 	@media (max-width: 760px) {
 		.directions-row {

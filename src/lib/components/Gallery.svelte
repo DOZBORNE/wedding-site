@@ -251,27 +251,30 @@
 		letter-spacing: 0.01em;
 	}
 	.lightbox {
+		box-sizing: border-box;
 		background: rgba(20, 14, 11, 0.94);
 		border: none;
-		max-width: 100vw;
-		max-height: 100vh;
 		width: 100vw;
+		max-width: 100vw;
 		height: 100vh;
+		height: 100dvh;
+		max-height: 100dvh;
 		display: grid;
 		place-items: center;
-		padding: 2rem;
+		padding: clamp(1rem, 4vw, 2rem);
+		overflow: hidden;
 	}
 	.lightbox:not([open]) {
 		display: none;
 	}
-	/* constrain every photo to the SAME height so they read as one size
-	   in the lightbox, regardless of the source photo's aspect ratio.
-	   width follows the image; max-width guards very wide/landscape shots
-	   and small screens. */
+	/* cap by height so photos read as one size in the lightbox, but let
+	   max-width: 100% (of the padded dialog) take over on narrow screens
+	   so a tall portrait never renders wider than the phone. */
 	.lightbox img {
 		width: auto;
-		height: min(78vh, 660px);
-		max-width: 94vw;
+		height: auto;
+		max-width: 100%;
+		max-height: min(78vh, 660px);
 		object-fit: contain;
 		border: 1px solid rgba(230, 217, 198, 0.3);
 	}
