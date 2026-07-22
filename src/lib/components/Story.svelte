@@ -39,12 +39,15 @@
 		const onScroll = () => {
 			if (!raf) raf = requestAnimationFrame(measure);
 		};
+		// scrolling lives on the inner .scroll-root (see layout.css), not the
+		// window — listen there so the pinned-chapter math still tracks
+		const scroller: Element | Window = probeEl?.closest('.scroll-root') ?? window;
 		measure();
-		window.addEventListener('scroll', onScroll, { passive: true });
+		scroller.addEventListener('scroll', onScroll, { passive: true });
 		window.addEventListener('resize', onScroll);
 		return () => {
 			cancelAnimationFrame(raf);
-			window.removeEventListener('scroll', onScroll);
+			scroller.removeEventListener('scroll', onScroll);
 			window.removeEventListener('resize', onScroll);
 		};
 	});

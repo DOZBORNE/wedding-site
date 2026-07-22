@@ -7,11 +7,12 @@
 	let open = $state(false);
 	const close = () => (open = false);
 
-	// lock the page scroll while the drawer is out
+	// lock the page scroll while the drawer is out — scrolling lives on
+	// .scroll-root now, so toggle a root class the layout hooks (see layout.css)
 	$effect(() => {
-		document.body.style.overflow = open ? 'hidden' : '';
+		document.documentElement.classList.toggle('nav-open', open);
 		return () => {
-			document.body.style.overflow = '';
+			document.documentElement.classList.remove('nav-open');
 		};
 	});
 </script>

@@ -45,6 +45,8 @@
 </svelte:head>
 
 <div class="grain" aria-hidden="true"></div>
-<Nav />
-{@render children()}
-<Footer />
+<div class="scroll-root">
+	<Nav />
+	{@render children()}
+	<Footer />
+</div>
