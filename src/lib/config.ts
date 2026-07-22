@@ -74,7 +74,7 @@ export const CHAPTERS: StoryChapter[] = [
   },
   {
     numeral: "Chapter II",
-    title: "The Years Between",
+    title: "The Inbetween",
     body: "First trips, small rituals, the life we built in Birmingham. The middle chapters are the best ones — and most of the engagement photos live here, framed like plates in an old book.",
     plates: [
       {
