@@ -43,6 +43,15 @@ Password from `ADMIN_PASSWORD`. You can:
   into rows. Edits diff against the stored list, so renaming or re-contacting a guest never
   resets their RSVP. New-party drafts persist in the browser until saved.
   Per-guest email/phone is **optional** — leave it off to just text the household contact.
+  Phone fields format themselves as you type — "2177791753" becomes "(217) 779-1753" — and
+  store `+E.164` for Twilio. Numbers outside the US are typed with their own country code
+  ("+44 20 7123 4567").
+- **Send invitations** — emails each party's contact plus any per-guest contacts. Defaults
+  to parties **not yet invited**. Two things keep it from double-sending: the `invited_at`
+  stamp, and `wed_messages` — an address that already has an `invite` logged for that party
+  is skipped, so re-running after a batch that died halfway only catches the stragglers.
+  "Everyone — re-send" ignores both, on purpose. Sends are paced under Resend's 2/second
+  limit and retry once when throttled.
 - **Send reminders** — emails/texts every party that hasn't responded (skips anyone
   reminded in the last 48h). Reaches household + per-guest contacts.
 - **Send an update** — broadcast a message (venue change, booking, schedule) to a chosen
@@ -70,7 +79,12 @@ Optional cron: `POST /api/reminders` with `Authorization: Bearer $CRON_SECRET`.
    Twilio auto-handles STOP/HELP for toll-free.
 
 ### Every env var → also add in Vercel
-Set `PUBLIC_SITE_URL` to the real domain or reminder/deep links break.
+Set `PUBLIC_SITE_URL` to the real domain or reminder/deep links break. It has to keep the
+`PUBLIC_` prefix and be read through `$env/dynamic/public` (`$lib/server/site.ts` does this)
+— `$env/dynamic/private` drops `PUBLIC_*` variables, which once left every emailed RSVP
+button pointing at `http://localhost:5173`. `SITE_URL` (unprefixed) works as an override, and
+Vercel's own `VERCEL_PROJECT_PRODUCTION_URL` is the last-resort fallback. The Invitations
+panel in `/admin` shows the URL it's about to send, and warns in red if it's a local one.
 
 ### Database
 Run `sql/schema.sql` in the Supabase SQL editor. It's safe to re-run — the migration

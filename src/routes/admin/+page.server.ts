@@ -6,14 +6,16 @@ import { sendAllReminders } from '$lib/server/reminders';
 import { sendInvitations } from '$lib/server/invites';
 import { sendBroadcast, type Audience, type BroadcastChannel } from '$lib/server/broadcast';
 import { smsEnabled } from '$lib/server/sms';
+import { siteUrl, siteUrlIsLocal } from '$lib/server/site';
+import { toE164 } from '$lib/phone';
 import type { Guest } from '$lib/types';
 import type { AdminPartyView } from './party-form';
 
 export const load: PageServerLoad = async ({ cookies }) => {
 	if (!isAdmin(cookies)) return { authed: false as const };
 
-	// Run both reads concurrently — one round-trip to Supabase instead of two.
-	const [partiesRes, notesRes] = await Promise.all([
+	// Run the reads concurrently — one round-trip to Supabase instead of three.
+	const [partiesRes, notesRes, inviteLogRes] = await Promise.all([
 		db()
 			.from('wed_parties')
 			.select(
@@ -23,19 +25,28 @@ export const load: PageServerLoad = async ({ cookies }) => {
 		db()
 			.from('wed_guestbook')
 			.select('id, name, message, approved, created_at')
-			.order('created_at', { ascending: false })
+			.order('created_at', { ascending: false }),
+		// Who an invitation actually reached — a party can have sends logged without
+		// being stamped "invited" if part of the batch failed.
+		db().from('wed_messages').select('party_id').eq('kind', 'invite').eq('status', 'sent').limit(5000)
 	]);
 	const parties: AdminPartyView[] = (partiesRes.data ?? []).map((p) => ({
 		...(p as unknown as AdminPartyView),
 		guests: ((p.wed_guests as Guest[]) ?? []).sort((a, b) => a.sort_order - b.sort_order)
 	}));
 	const notes = notesRes.data;
+	const partlySent = [...new Set((inviteLogRes.data ?? []).map((m) => m.party_id as string))].filter(
+		(id) => !parties.find((p) => p.id === id)?.invited_at
+	);
 
 	return {
 		authed: true as const,
 		parties,
 		notes: notes ?? [],
-		smsConfigured: smsEnabled()
+		smsConfigured: smsEnabled(),
+		partlySent,
+		siteUrl: siteUrl(),
+		siteUrlIsLocal: siteUrlIsLocal()
 	};
 };
 
@@ -48,6 +59,14 @@ type IncomingGuest = {
 	phone: string;
 	is_plus_one: boolean;
 	sort_order: number;
+};
+
+/** Store phones as +E.164 whatever the editor sent — Twilio takes nothing else. */
+const canonPhone = (v: unknown) => {
+	const raw = String(v ?? '')
+		.trim()
+		.slice(0, 30);
+	return toE164(raw) || raw;
 };
 
 /** Parse the editor's guests_json payload. Returns null when the shape is wrong. */
@@ -75,9 +94,7 @@ function readGuests(raw: string): IncomingGuest[] | null {
 			email: String(g.email ?? '')
 				.trim()
 				.slice(0, 120),
-			phone: String(g.phone ?? '')
-				.trim()
-				.slice(0, 30),
+			phone: canonPhone(g.phone),
 			is_plus_one: g.is_plus_one === true,
 			sort_order: i
 		});
@@ -122,9 +139,7 @@ export const actions: Actions = {
 			contact_email: String(form.get('contact_email') ?? '')
 				.trim()
 				.slice(0, 120),
-			contact_phone: String(form.get('contact_phone') ?? '')
-				.trim()
-				.slice(0, 30),
+			contact_phone: canonPhone(form.get('contact_phone')),
 			notes: String(form.get('notes') ?? '')
 				.trim()
 				.slice(0, 2000)

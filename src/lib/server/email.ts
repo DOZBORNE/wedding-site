@@ -10,9 +10,25 @@ function resend(): Resend | null {
 }
 
 function shell(inner: string) {
-	return `
+	// A full document with a viewport tag: without it phone clients zoom the
+	// 560px card out and the call-to-action ends up a few pixels tall.
+	return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light" />
+<meta name="format-detection" content="telephone=no" />
+<style>
+	@media only screen and (max-width: 600px) {
+		.em-card { padding: 24px 18px !important; }
+		.em-btn a { display: block !important; padding: 18px 16px !important; }
+	}
+</style>
+</head>
+<body style="margin:0;padding:0;background:#221A14;">
 	<div style="background:#221A14;padding:32px 16px;font-family:Georgia,'Times New Roman',serif;">
-		<div style="max-width:560px;margin:0 auto;background:#E8DCC8;color:#3A2420;padding:36px 32px;border:1px solid #4A2E1F;">
+		<div class="em-card" style="max-width:560px;margin:0 auto;background:#E8DCC8;color:#3A2420;padding:36px 32px;border:1px solid #4A2E1F;">
 			<div style="text-align:center;font-size:26px;font-style:italic;color:#381015;margin-bottom:4px;">${names}</div>
 			<div style="text-align:center;font-size:11px;letter-spacing:4px;text-transform:uppercase;color:#4A2E1F;margin-bottom:24px;">
 				${WEDDING.dateLabel} · ${VENUE.name}
@@ -24,33 +40,81 @@ function shell(inner: string) {
 				${VENUE.address}<br/>${COUPLE.hashtag}
 			</div>
 		</div>
-	</div>`;
+	</div>
+</body>
+</html>`;
 }
+
+/**
+ * The call-to-action. A padded <a> collapses in Gmail's and Outlook's mobile
+ * apps, so the colour lives on a table cell and the link fills it — plus the raw
+ * URL underneath for any client that mangles the button anyway.
+ */
+function button(url: string, label: string) {
+	return `
+			<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:24px auto 8px;">
+				<tr>
+					<td class="em-btn" align="center" bgcolor="#381015" style="background:#381015;">
+						<a href="${url}" style="display:inline-block;padding:16px 30px;font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:1.2;letter-spacing:2px;text-transform:uppercase;color:#E8DCC8;text-decoration:none;">${label}</a>
+					</td>
+				</tr>
+			</table>
+			<p style="text-align:center;font-size:12px;color:#4A2E1F;margin:0 0 8px;word-break:break-all;">
+				or open <a href="${url}" style="color:#381015;">${url}</a>
+			</p>`;
+}
+
+/** Resend allows 2 requests a second — one queue keeps a whole batch under it. */
+const SEND_GAP_MS = 600;
+let nextSlot = 0;
+function pace(): Promise<void> {
+	const now = Date.now();
+	const at = Math.max(now, nextSlot);
+	nextSlot = at + SEND_GAP_MS;
+	return at > now ? new Promise((r) => setTimeout(r, at - now)) : Promise.resolve();
+}
+
+const isRateLimit = (msg: string) => /rate.?limit|too many requests|429/i.test(msg);
 
 /** Returns the Resend message id on success (may be ''), or null if not sent. */
 async function send(to: string, subject: string, html: string): Promise<string | null> {
 	const r = resend();
 	// Not configured (no key / from / recipient) — skip quietly.
 	if (!r || !env.RESEND_FROM || !to) return null;
-	const { data, error } = await r.emails.send({
-		from: env.RESEND_FROM,
-		to,
-		subject,
-		html,
-		text: htmlToText(html), // plain-text alternative — better deliverability
-		// Guest replies route here (any inbox; need not be on the verified domain).
-		...(env.RESEND_REPLY_TO ? { replyTo: env.RESEND_REPLY_TO } : {})
-	});
-	// A real rejection (unverified domain, bad address…) — throw so callers can report it.
-	if (error) throw new Error(error.message || 'Resend rejected the email');
-	return data?.id ?? '';
+
+	for (let attempt = 0; ; attempt++) {
+		await pace();
+		const { data, error } = await r.emails.send({
+			from: env.RESEND_FROM,
+			to,
+			subject,
+			html,
+			text: htmlToText(html), // plain-text alternative — better deliverability
+			// Guest replies route here (any inbox; need not be on the verified domain).
+			...(env.RESEND_REPLY_TO ? { replyTo: env.RESEND_REPLY_TO } : {})
+		});
+		if (!error) return data?.id ?? '';
+		// Being throttled isn't a rejection — wait out the window and try again.
+		// (A dropped send used to leave the party unmarked, so the next run re-invited it.)
+		const message = error.message || 'Resend rejected the email';
+		if (isRateLimit(message) && attempt < 2) {
+			nextSlot = Date.now() + 1200;
+			continue;
+		}
+		// A real rejection (unverified domain, bad address…) — throw so callers can report it.
+		throw new Error(message);
+	}
 }
 
 /** A plain-text version of the HTML — improves deliverability and gives text-only clients a body. */
 function htmlToText(html: string): string {
 	return html
 		.replace(/<style[\s\S]*?<\/style>/gi, '')
-		.replace(/<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, '$2: $1') // keep link URLs
+		// keep link URLs, without repeating one that's already spelled out
+		.replace(/<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (_m, href: string, text: string) => {
+			const label = text.replace(/<[^>]+>/g, '').trim();
+			return label && label !== href ? `${label}: ${href}` : href;
+		})
 		.replace(/<\/(p|div|tr|h[1-6]|br)>/gi, '\n')
 		.replace(/<br\s*\/?>/gi, '\n')
 		.replace(/<[^>]+>/g, '')
@@ -111,9 +175,7 @@ export async function sendInvite(to: string, partyName: string, rsvpUrl: string)
 			</div>
 			<p style="font-size:15px;">We would be honored to have you with us. Please let us know if you can
 			join — it takes less than a minute:</p>
-			<div style="text-align:center;margin:24px 0;">
-				<a href="${rsvpUrl}" style="background:#381015;color:#E8DCC8;text-decoration:none;padding:14px 32px;font-size:12px;letter-spacing:3px;text-transform:uppercase;">Break the seal · RSVP</a>
-			</div>
+			${button(rsvpUrl, 'Break the seal · RSVP')}
 			<p style="font-size:14px;font-style:italic;">Kindly reply by ${WEDDING.rsvpDeadlineLabel}.
 			The button above opens your invitation directly — no code needed.</p>
 		`)
@@ -128,9 +190,7 @@ export async function sendReminder(to: string, partyName: string, rsvpUrl: strin
 			<p style="font-size:16px;">Dear <strong>${partyName}</strong>,</p>
 			<p style="font-size:15px;">We're so hoping you can join us at ${VENUE.name} on ${WEDDING.dateLabel}.
 			We haven't received your reply yet — it takes less than a minute:</p>
-			<div style="text-align:center;margin:24px 0;">
-				<a href="${rsvpUrl}" style="background:#381015;color:#E8DCC8;text-decoration:none;padding:14px 32px;font-size:12px;letter-spacing:3px;text-transform:uppercase;">Break the seal · RSVP</a>
-			</div>
+			${button(rsvpUrl, 'Break the seal · RSVP')}
 			<p style="font-size:14px;font-style:italic;">Please reply by ${WEDDING.rsvpDeadlineLabel}.</p>
 		`)
 	);
@@ -154,9 +214,7 @@ export async function sendUpdate(
 		shell(`
 			<p style="font-size:16px;">Dear <strong>${partyName}</strong>,</p>
 			${paragraphs}
-			<div style="text-align:center;margin:24px 0;">
-				<a href="${rsvpUrl}" style="background:#381015;color:#E8DCC8;text-decoration:none;padding:12px 28px;font-size:12px;letter-spacing:3px;text-transform:uppercase;">View your RSVP</a>
-			</div>
+			${button(rsvpUrl, 'View your RSVP')}
 		`)
 	);
 }

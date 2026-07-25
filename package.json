@@ -29,6 +29,7 @@
 		"@fontsource/bodoni-moda": "^5.2.7",
 		"@fontsource/cormorant-garamond": "^5.2.11",
 		"@supabase/supabase-js": "^2.110.2",
+		"libphonenumber-js": "^1.13.9",
 		"maplibre-gl": "^5.24.0",
 		"resend": "^6.17.2"
 	}

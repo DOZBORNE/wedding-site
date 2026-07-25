@@ -5,13 +5,14 @@
 	import { SvelteMap } from 'svelte/reactivity';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import ConfirmButton from './ConfirmButton.svelte';
+	import PhoneInput from './PhoneInput.svelte';
+	import { toE164 } from '$lib/phone';
 	import {
 		blankGuest,
 		emailError,
 		isBlankRow,
 		parsePastedGuests,
 		phoneError,
-		phoneWarning,
 		type AdminPartyView,
 		type GuestDraft,
 		type PartyDraft
@@ -59,6 +60,9 @@
 	if (!initial.guests.length) initial.guests.push(blankGuest());
 	let model = $state<PartyDraft>(initial);
 
+	/** Phones are stored as +E.164 so Twilio never has to guess. */
+	const canonPhone = (v: string) => toE164(v) || v.trim();
+
 	/** What actually gets saved — trimmed, blank rows dropped, RSVP fields stripped. */
 	const snapGuests = (m: PartyDraft) =>
 		m.guests
@@ -67,14 +71,14 @@
 				id: g.id,
 				name: g.name.trim(),
 				email: g.email.trim(),
-				phone: g.phone.trim(),
+				phone: canonPhone(g.phone),
 				is_plus_one: g.is_plus_one
 			}));
 	const snap = (m: PartyDraft) =>
 		JSON.stringify({
 			display_name: m.display_name.trim(),
 			contact_email: m.contact_email.trim(),
-			contact_phone: m.contact_phone.trim(),
+			contact_phone: canonPhone(m.contact_phone),
 			notes: m.notes.trim(),
 			guests: snapGuests(m)
 		});
@@ -104,22 +108,20 @@
 
 	const rowError = (g: GuestDraft) =>
 		isBlankRow(g)
-			? { name: '', email: '', phone: '', warn: '' }
+			? { name: '', email: '', phone: '' }
 			: {
 					name:
 						!g.is_plus_one && !g.name.trim()
 							? 'Give this guest a name, or mark the row as a plus-one.'
 							: '',
 					email: emailError(g.email),
-					phone: phoneError(g.phone),
-					warn: phoneWarning(g.phone)
+					phone: phoneError(g.phone)
 				};
 
 	const topErrors = $derived({
 		display_name: model.display_name.trim() ? '' : 'The party needs a name.',
 		contact_email: emailError(model.contact_email),
-		contact_phone: phoneError(model.contact_phone),
-		contact_warn: phoneWarning(model.contact_phone)
+		contact_phone: phoneError(model.contact_phone)
 	});
 
 	const valid = $derived(
@@ -296,18 +298,17 @@
 			</label>
 			<label class="f">
 				<span>Contact phone</span>
-				<input
+				<PhoneInput
 					name="contact_phone"
-					type="tel"
 					bind:value={model.contact_phone}
-					placeholder="+12055551234"
-					class:bad={showTop('contact_phone') && topErrors.contact_phone}
+					placeholder="(205) 555-1234"
+					invalid={showTop('contact_phone') && !!topErrors.contact_phone}
 					onblur={() => touchTop('contact_phone')}
 				/>
 				{#if showTop('contact_phone') && topErrors.contact_phone}
 					<em class="f-err">{topErrors.contact_phone}</em>
-				{:else if showTop('contact_phone') && topErrors.contact_warn}
-					<em class="f-warn">{topErrors.contact_warn}</em>
+				{:else if !model.contact_phone}
+					<em class="f-note">US by default — for anywhere else, type + and the country code.</em>
 				{/if}
 			</label>
 		</div>
@@ -338,12 +339,11 @@
 						onkeydown={(e) => rowEnter(e, i)}
 						onblur={() => touchRow(g, 'email')}
 					/>
-					<input
-						aria-label="Guest phone"
-						type="tel"
-						placeholder="+1…"
+					<PhoneInput
+						ariaLabel="Guest phone"
+						placeholder="phone"
 						bind:value={g.phone}
-						class:bad={showRow(g, 'phone') && err.phone}
+						invalid={showRow(g, 'phone') && !!err.phone}
 						onkeydown={(e) => rowEnter(e, i)}
 						onblur={() => touchRow(g, 'phone')}
 					/>
@@ -367,8 +367,6 @@
 								(showRow(g, 'email') && err.email) ||
 								(showRow(g, 'phone') && err.phone)}
 						</em>
-					{:else if showRow(g, 'phone') && err.warn}
-						<em class="f-warn g-note">{err.warn}</em>
 					{/if}
 				</div>
 			{/each}
@@ -481,10 +479,10 @@
 		font-style: normal;
 		font-size: 0.85rem;
 	}
-	.f-warn {
-		color: var(--candle);
+	.f-note {
+		color: var(--ink-faint);
 		font-style: normal;
-		font-size: 0.85rem;
+		font-size: 0.78rem;
 	}
 	.form-err {
 		color: var(--blush);
@@ -638,7 +636,8 @@
 			grid-column: 1 / 2;
 		}
 		.g-row input[aria-label='Guest email'],
-		.g-row input[aria-label='Guest phone'] {
+		/* the phone field lives in PhoneInput, so it needs :global to reach */
+		.g-row :global(input[aria-label='Guest phone']) {
 			grid-column: 1 / -1;
 		}
 	}

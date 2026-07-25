@@ -137,7 +137,14 @@
 		new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
 	// ── send panels — each holds its own busy/result/error state ────────────
-	type InviteResult = { parties: number; emails: number; texts: number; failed: number; error: string };
+	type InviteResult = {
+		parties: number;
+		emails: number;
+		texts: number;
+		failed: number;
+		skipped: number;
+		error: string;
+	};
 	type RemindResult = { parties: number; emails: number; texts: number; skipped?: number };
 	type BroadcastResult = { recipients: number; emails: number; texts: number };
 
@@ -310,7 +317,11 @@
 							· {party.guests.length}
 							{party.guests.length === 1 ? 'guest' : 'guests'}
 							{#if dirtyEdits[party.id]}<span class="chip warn">unsaved edits</span>{/if}
-							{#if !party.invited_at}<span class="chip wait">not invited</span>{/if}
+							{#if !party.invited_at}
+								<span class="chip wait">
+									{data.partlySent.includes(party.id) ? 'partly invited' : 'not invited'}
+								</span>
+							{/if}
 							{#if party.responded_at}
 								<span class="chip ok">responded</span>
 							{:else}
@@ -346,10 +357,19 @@
 			<h2>Invitations</h2>
 			<p class="hint">
 				Sends the invitation email to each party's contact (plus any per-guest contacts). Defaults
-				to parties <b>not yet invited</b>, so re-running won't double-send.
+				to parties <b>not yet invited</b>, and never sends twice to an address the log already
+				shows an invitation for — so re-running after a partial batch only catches the stragglers.
 				{#if data.smsConfigured}Texts go to parties with a phone number.{:else}
 					<i>SMS is off until Twilio is configured.</i>{/if}
 			</p>
+			{#if data.siteUrlIsLocal}
+				<p class="err" role="alert">
+					RSVP links would point at <code>{data.siteUrl}</code> — nobody can open that on their
+					phone. Set <code>PUBLIC_SITE_URL</code> to the live domain before sending.
+				</p>
+			{:else}
+				<p class="hint">Links in the email point at <code>{data.siteUrl}</code>.</p>
+			{/if}
 			<form method="POST" action="?/invite" use:enhance={handleInvite} class="send-form">
 				<label class="inline">
 					Who
@@ -376,12 +396,17 @@
 			</form>
 			{#if inviteResult}
 				<p class="ok">
-					Invited {inviteResult.parties} parties — {inviteResult.emails} emails,
+					Invited {inviteResult.parties}
+					{inviteResult.parties === 1 ? 'party' : 'parties'} — {inviteResult.emails} emails,
 					{inviteResult.texts} texts.
+					{#if inviteResult.skipped}
+						({inviteResult.skipped} recipient{inviteResult.skipped === 1 ? '' : 's'} skipped — already
+						invited.){/if}
 				</p>
 				{#if inviteResult.failed}
 					<p class="err">
-						{inviteResult.failed} email(s) failed. First error: {inviteResult.error}
+						{inviteResult.failed} send(s) failed — those parties stay "not invited" so you can run
+						this again; anyone already reached will be skipped. First error: {inviteResult.error}
 					</p>
 				{/if}
 				{#if inviteResult.parties === 0}

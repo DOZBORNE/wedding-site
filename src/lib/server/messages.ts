@@ -34,6 +34,28 @@ export async function logMessage(m: LogInput) {
 	}
 }
 
+/**
+ * Every `party|channel|address` an invitation has already gone to. The invite run
+ * checks this so a batch that died halfway can be re-run without anyone getting a
+ * second copy — the `invited_at` stamp can't cover that on its own, because a
+ * failed send leaves it unset.
+ */
+export async function alreadyInvited(partyIds: string[]): Promise<Set<string>> {
+	const seen = new Set<string>();
+	if (!partyIds.length) return seen;
+	const { data } = await db()
+		.from('wed_messages')
+		.select('party_id, channel, to_address')
+		.eq('kind', 'invite')
+		.eq('status', 'sent')
+		.in('party_id', partyIds)
+		.limit(5000);
+	for (const m of data ?? []) {
+		seen.add(`${m.party_id}|${m.channel}|${String(m.to_address).toLowerCase()}`);
+	}
+	return seen;
+}
+
 /** Unique, non-empty, lower-cased recipients (dedupes party + per-guest contacts). */
 export function dedupeRecipients(values: (string | null | undefined)[]): string[] {
 	const seen = new Set<string>();

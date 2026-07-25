@@ -1,4 +1,5 @@
 import type { Guest } from '$lib/types';
+import { toE164 } from '$lib/phone';
 
 /** A party as the admin page sees it — full contact info, RSVP state, timestamps. */
 export type AdminPartyView = {
@@ -55,21 +56,13 @@ export const isBlankRow = (g: GuestDraft) =>
 	!g.name.trim() && !g.email.trim() && !g.phone.trim() && !g.is_plus_one;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const phoneDigits = (v: string) => v.replace(/[\s\-().]/g, '');
 
 export const emailError = (v: string) =>
 	v.trim() && !EMAIL_RE.test(v.trim()) ? 'This doesn’t look like an email address.' : '';
 
-export const phoneError = (v: string) =>
-	v.trim() && !/^\+?\d{7,15}$/.test(phoneDigits(v.trim()))
-		? 'This doesn’t look like a phone number.'
-		: '';
-
-/** Texts need E.164 — a soft nudge, never a blocker. */
-export const phoneWarning = (v: string) =>
-	v.trim() && !phoneError(v) && !v.trim().startsWith('+')
-		? 'Texts need the international format — start with +1.'
-		: '';
+// Phone validation and E.164 normalisation live in $lib/phone — the field formats
+// itself as you type, so there's no "start with +1" nudge to give any more.
+export { phoneError } from '$lib/phone';
 
 /**
  * Turn pasted lines — a spreadsheet selection, "Name<TAB>email<TAB>phone",
@@ -92,7 +85,7 @@ export function parsePastedGuests(text: string): GuestDraft[] {
 			const nameParts: string[] = [];
 			for (const part of parts) {
 				if (!g.email && part.includes('@')) g.email = part;
-				else if (!g.phone && /^[+(]?[\d\s\-().]{7,}$/.test(part)) g.phone = part;
+				else if (!g.phone && /^[+(]?[\d\s\-().]{7,}$/.test(part)) g.phone = toE164(part) || part;
 				else nameParts.push(part);
 			}
 			let name = nameParts.join(' ');

@@ -1,5 +1,5 @@
-import { env } from '$env/dynamic/private';
 import { COUPLE, VENUE, WEDDING } from '$lib/config';
+import { siteUrl } from './site';
 import { db, GUEST_COLS_FULL } from './supabase';
 import { sendReminder } from './email';
 import { sendSms, smsEnabled } from './sms';
@@ -16,7 +16,7 @@ const COOLDOWN_HOURS = 48;
  * reminded within the last COOLDOWN_HOURS (pass force to override).
  */
 export async function sendAllReminders(opts: { includeSms: boolean; force?: boolean }) {
-	const site = env.PUBLIC_SITE_URL || 'http://localhost:5173';
+	const site = siteUrl();
 	const { data: parties, error } = await db()
 		.from('wed_parties')
 		.select(

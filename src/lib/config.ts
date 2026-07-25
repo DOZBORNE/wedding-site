@@ -57,7 +57,7 @@ export const CHAPTERS: StoryChapter[] = [
     numeral: "Chapter I",
     title: "The Meeting",
     // TODO: replace with the real story, in your own words
-    body: "Every story has a first page. This is ours — where we met, what we noticed first, and what we still tease each other about! Jess has a big smile, an even bigger heart, and a laugh that rings with more joy than Christmas morning.",
+    body: "In the beginning there were two people from two different worlds — and, as beginnings often do, theirs arrived disguised as an ordinary church ice skating night. Not long after, Devin asked Jess to coffee, where the sparks caught and never quite went out. He noticed her big smile first, then her even bigger heart, and a laugh that rings with more joy than Christmas morning. She noticed his curly hair, his remarkable mind, the laugh that makes her smile before she can help it, his gentle heart and spirit, and his plain determination to win her hand. From coffee shops to long walks in the park, they kept finding reasons for one more hour together.",
     plates: [
       {
         src: "/photos/jess_at_pizza_grace.jpg",
@@ -68,14 +68,14 @@ export const CHAPTERS: StoryChapter[] = [
         src: "/photos/dev_pumpkin_patch.jpg",
         caption: "where it started",
         tone: "olive",
-        body: "Time and again, lauging to no end. We spent most of our early days together young and very much in love.",
+        body: "Time and again, laughing to no end — those early days spent young, and very much in love.",
       },
     ],
   },
   {
     numeral: "Chapter II",
     title: "The Inbetween",
-    body: "First trips, small rituals, the life we built in Birmingham. The middle chapters are the best ones! We spent our time falling in love with one another. Travelling when we could, exploring the world with a stranger. These sweet days were filled with curiousity and a vibrant love for what was becoming a best friend.",
+    body: "The middle chapters are the best ones; this is when love grew its roots. From trips to the mountains, ordinary evenings, Birmingham explored street by street, to a hundred small discoveries about the person across the table; they became the best of friends, and tasted the particular sweetness of being fully known, fully loved, and still chosen.",
     plates: [
       {
         src: "/photos/dev_jess_june.jpg",
@@ -97,7 +97,7 @@ export const CHAPTERS: StoryChapter[] = [
   {
     numeral: "Chapter III",
     title: "The Question",
-    body: "The plan, the nerves – and eventually – the yes. Devin was very neverous (and stressed) trying to make everything as perfect as possible. But now, it's all over and we're headed for a new life together–forever!",
+    body: "Devin had long since set his mind on marrying Jess. So he made a plan — and carried it, nervous and hopeful, into the woods beside a trickling creek, where he knelt and asked the most important question of his life. He asked Jess the most important question of his life, and she wholeheartedly said yes! From thenceforth, they couldn’t be more eager to start planning for their futures together. Looking back across every page, they've come to see the Lord's goodness written through all of it — the way He drew two very different worlds together — and they couldn’t be more grateful. What they hope to build now is a life that is honorable, loving, sacrificial, and that gives Jesus all the glory.",
     plates: [
       { src: "/photos/proposal.jpg", caption: "the proposal", tone: "candle" },
       {

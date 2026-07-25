@@ -1,5 +1,5 @@
-import { env } from '$env/dynamic/private';
 import { db, GUEST_COLS_FULL } from './supabase';
+import { siteUrl } from './site';
 import { sendUpdate } from './email';
 import { sendSms, smsEnabled } from './sms';
 import { logMessage, dedupeRecipients } from './messages';
@@ -19,7 +19,7 @@ export async function sendBroadcast(opts: {
 	subject: string;
 	message: string;
 }) {
-	const site = env.PUBLIC_SITE_URL || 'http://localhost:5173';
+	const site = siteUrl();
 	const subject = opts.subject.trim().slice(0, 140) || 'An update';
 	const message = opts.message.trim().slice(0, 4000);
 	if (!message) throw new Error('Message body is required.');
