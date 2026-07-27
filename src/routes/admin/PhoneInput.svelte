@@ -100,9 +100,10 @@
 
 <style>
 	/* Matches the fields in PartyEditor — style lives here because scoped styles
-	   don't cross the component boundary. */
+	   don't cross the component boundary. The colours come from tokens the host
+	   sets, so the same field works on the dark page and on the editor's paper. */
 	input[type='tel'] {
-		background: rgba(0, 0, 0, 0.18);
+		background: var(--field-bg, rgba(0, 0, 0, 0.18));
 		border: 1px solid var(--line);
 		color: var(--ink-on-dark);
 		padding: 0.5rem 0.7rem;
@@ -110,17 +111,20 @@
 		font-size: 0.95rem;
 		width: 100%;
 		min-width: 0;
-		transition: border-color 0.2s ease;
+		transition:
+			border-color 0.2s ease,
+			background 0.2s ease;
 	}
 	input[type='tel']:focus {
 		outline: none;
 		border-color: var(--candle);
+		background: var(--field-bg-focus, var(--field-bg, rgba(0, 0, 0, 0.18)));
 	}
 	input[type='tel'].bad {
-		border-color: rgba(201, 159, 148, 0.75);
+		border-color: color-mix(in srgb, var(--blush) 75%, transparent);
 	}
 	input[type='tel']::placeholder {
 		color: var(--ink-faint);
-		opacity: 0.6;
+		opacity: 0.75;
 	}
 </style>

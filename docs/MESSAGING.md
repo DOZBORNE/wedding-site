@@ -61,6 +61,11 @@ Password from `ADMIN_PASSWORD`. You can:
   parties are skipped explicitly, named in the result, and left "not invited"; they used to
   pass through the batch in silence and count as handled. The party list marks them too
   (`no phone`, `no contact` chips).
+- **Send invitation → Email / Text** at the foot of a party's own editor — one household,
+  one channel, for a bounced address or a party added after the batch went out. Deliberately
+  *not* deduped against `wed_messages`: it's a resend button, so pressing it twice sends
+  twice. It still stamps `invited_at` if the party wasn't stamped and nothing failed, and it
+  sends whatever is **saved** — save the party first if you just changed a contact.
 - **Send reminders** — emails/texts every party that hasn't responded (skips anyone
   reminded in the last 48h). Reaches household + per-guest contacts.
 - **Send an update** — broadcast a message (venue change, booking, schedule) to a chosen

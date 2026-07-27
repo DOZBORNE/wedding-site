@@ -24,6 +24,7 @@
 	let {
 		party = null,
 		draft = null,
+		smsConfigured = false,
 		notify = () => {},
 		onSaved,
 		onDiscard,
@@ -33,6 +34,8 @@
 		party?: AdminPartyView | null;
 		/** Draft mode: a page-owned draft object, mutated in place so the page can persist it. */
 		draft?: PartyDraft | null;
+		/** Twilio is wired up — without it the text button has nothing to send through. */
+		smsConfigured?: boolean;
 		notify?: (text: string, kind?: 'ok' | 'err') => void;
 		onSaved?: (name: string) => void;
 		onDiscard?: () => void;
@@ -249,6 +252,53 @@
 		};
 	};
 
+	// ── sending to this one party ───────────────────────────────────────────
+	// Counted off the *stored* party, not the working copy: the server sends to
+	// what's saved, so a contact typed a moment ago doesn't count until it is.
+	const contacts = (values: (string | null | undefined)[]) => [
+		...new Set(
+			values
+				.map((v) => (v ?? '').trim().toLowerCase())
+				.filter(Boolean)
+		)
+	];
+	const emailTargets = $derived(
+		party ? contacts([party.contact_email, ...party.guests.map((g) => g.email)]) : []
+	);
+	const phoneTargets = $derived(
+		party ? contacts([party.contact_phone, ...party.guests.map((g) => g.phone)]) : []
+	);
+	const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+	let sending = $state<'' | 'email' | 'sms'>('');
+
+	const handleSend =
+		(channel: 'email' | 'sms'): SubmitFunction =>
+		() => {
+			sending = channel;
+			return async ({ result }) => {
+				sending = '';
+				if (result.type === 'success') {
+					const r = (result.data as { sendOneResult: { emails: number; texts: number } })
+						.sendOneResult;
+					notify(
+						channel === 'email'
+							? `Invitation emailed to ${plural(r.emails, 'address', 'addresses')}.`
+							: `Invitation texted to ${plural(r.texts, 'number', 'numbers')}.`
+					);
+					await invalidateAll();
+				} else if (result.type === 'failure') {
+					notify(
+						(result.data as { sendOneError?: string } | undefined)?.sendOneError ??
+							'The send failed.',
+						'err'
+					);
+				} else {
+					notify('Connection trouble — check the messages log before re-sending.', 'err');
+				}
+			};
+		};
+
 	const handleDelete: SubmitFunction = () => {
 		deleting = true;
 		return async ({ result }) => {
@@ -459,23 +509,95 @@
 	</form>
 
 	{#if party}
-		<form method="POST" action="?/deleteParty" use:enhance={handleDelete} class="del-form">
-			<input type="hidden" name="id" value={party.id} />
-			<ConfirmButton
-				label="Delete party"
-				confirmLabel="Yes, delete"
-				message="Their guests and any RSVP go too."
-				kind="danger"
-				small
-				busy={deleting}
-				busyLabel="Deleting…"
-			/>
-		</form>
+		<div class="tail">
+			<!-- Sending to one household — a resend for a bounced address, or the first
+			     copy for a party added after the batch went out. Deliberately quiet:
+			     the batch runs further down the page are the usual way to do this. -->
+			<div class="send-row">
+				<span class="tail-label">Send invitation</span>
+				<form method="POST" action="?/sendOne" use:enhance={handleSend('email')}>
+					<input type="hidden" name="id" value={party.id} />
+					<input type="hidden" name="channel" value="email" />
+					<ConfirmButton
+						label="Email"
+						confirmLabel="Yes, email"
+						message="Goes to {plural(emailTargets.length, 'address', 'addresses')} on file."
+						kind="quiet"
+						confirmKind="primary"
+						small
+						busy={sending === 'email'}
+						busyLabel="Sending…"
+						disabled={!emailTargets.length || !!sending}
+					/>
+				</form>
+				<form method="POST" action="?/sendOne" use:enhance={handleSend('sms')}>
+					<input type="hidden" name="id" value={party.id} />
+					<input type="hidden" name="channel" value="sms" />
+					<ConfirmButton
+						label="Text"
+						confirmLabel="Yes, text"
+						message="Goes to {plural(phoneTargets.length, 'number', 'numbers')} on file."
+						kind="quiet"
+						confirmKind="primary"
+						small
+						busy={sending === 'sms'}
+						busyLabel="Sending…"
+						disabled={!smsConfigured || !phoneTargets.length || !!sending}
+					/>
+				</form>
+				<span class="tail-note">
+					{#if !emailTargets.length && !phoneTargets.length}
+						No contact on file for this party.
+					{:else if !smsConfigured && !emailTargets.length}
+						Only a phone number here, and texting is off.
+					{:else if dirty}
+						Sends the saved details — save first if you changed a contact.
+					{:else if party.invited_at}
+						Already invited — this sends it again.
+					{/if}
+				</span>
+			</div>
+
+			<form method="POST" action="?/deleteParty" use:enhance={handleDelete} class="del-form">
+				<input type="hidden" name="id" value={party.id} />
+				<ConfirmButton
+					label="Delete party"
+					confirmLabel="Yes, delete"
+					message="Their guests and any RSVP go too."
+					kind="danger"
+					small
+					busy={deleting}
+					busyLabel="Deleting…"
+				/>
+			</form>
+		</div>
 	{/if}
 </div>
 
 <style>
+	/* The editor is a sheet of paper laid on the dark desk — the same parchment the
+	   RSVP card is printed on. It's the one surface here that gets read and typed
+	   into for an hour at a stretch, so it trades candlelight for ink-on-paper
+	   contrast.
+
+	   The dark-theme tokens are re-pointed on this element rather than only in the
+	   rules below, so the child components (PhoneInput, ConfirmButton) come along
+	   without needing a prop each. Everything inside .editor is on paper; nothing
+	   outside it is touched. */
 	.editor {
+		--line: rgba(58, 36, 32, 0.32);
+		--ink-on-dark: var(--ink-on-paper);
+		--ink-muted: var(--chocolate);
+		--ink-faint: #6c5546;
+		--candle: var(--claret);
+		--blush: #7a1f28;
+		--field-bg: rgba(255, 253, 247, 0.55);
+		--field-bg-focus: rgba(255, 253, 247, 0.92);
+
+		background: linear-gradient(160deg, var(--parchment) 0%, var(--parchment-deep) 100%);
+		color: var(--ink-on-paper);
+		box-shadow: inset 0 0 40px rgba(74, 46, 31, 0.1);
+		padding: 1.15rem 1.2rem 1.3rem;
 		display: grid;
 		gap: 1rem;
 	}
@@ -495,34 +617,41 @@
 	}
 	.f > span {
 		font-size: 0.7rem;
+		font-weight: 700;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
-		color: var(--ink-faint);
+		color: var(--ink-label);
 	}
 	input:not([type='checkbox']) {
-		background: rgba(0, 0, 0, 0.18);
-		border: 1px solid var(--line);
-		color: var(--ink-on-dark);
+		background: var(--field-bg);
+		border: 1px solid rgba(58, 36, 32, 0.35);
+		color: var(--ink-on-paper);
 		padding: 0.5rem 0.7rem;
 		font-family: var(--body);
 		font-size: 0.95rem;
 		width: 100%;
 		min-width: 0;
-		transition: border-color 0.2s ease;
+		transition:
+			border-color 0.2s ease,
+			background 0.2s ease;
 	}
+	/* The filled tint deepens on focus as well as the rule changing colour — the
+	   field you're in has to be obvious when the row is five boxes wide. */
 	input:not([type='checkbox']):focus {
 		outline: none;
-		border-color: var(--candle);
+		border-color: var(--claret);
+		background: var(--field-bg-focus);
 	}
 	input.bad {
-		border-color: rgba(201, 159, 148, 0.75);
+		border-color: #7a1f28;
+		background: rgba(122, 31, 40, 0.07);
 	}
 	input::placeholder {
-		color: var(--ink-faint);
-		opacity: 0.6;
+		color: rgba(58, 36, 32, 0.5);
 	}
 	.f-err {
-		color: var(--blush);
+		color: #6b1a22;
+		font-weight: 600;
 		font-style: normal;
 		font-size: 0.85rem;
 	}
@@ -531,16 +660,17 @@
 		font-style: normal;
 		font-size: 0.78rem;
 	}
-	.form-err {
-		color: var(--blush);
-		border: 1px solid rgba(201, 159, 148, 0.35);
-		padding: 0.5rem 0.8rem;
+	.form-err,
+	.warn-line {
 		margin: 0;
+		font-size: 0.9rem;
+		font-weight: 600;
+		color: #6b1a22;
+		background: rgba(122, 31, 40, 0.08);
+		border-left: 3px solid #7a1f28;
+		padding: 0.55rem 0.8rem;
 	}
 	.warn-line {
-		color: var(--candle);
-		font-size: 0.88rem;
-		margin: 0;
 		display: flex;
 		align-items: center;
 		gap: 0.6rem;
@@ -549,9 +679,9 @@
 
 	/* mailing address */
 	.addr {
-		border: 1px solid var(--line);
+		border: 1px solid rgba(58, 36, 32, 0.28);
 		padding: 0.8rem;
-		background: rgba(0, 0, 0, 0.12);
+		background: rgba(255, 253, 247, 0.28);
 		display: grid;
 		gap: 0.6rem;
 	}
@@ -563,9 +693,10 @@
 	}
 	.addr-head span {
 		font-size: 0.7rem;
+		font-weight: 700;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
-		color: var(--ink-faint);
+		color: var(--ink-label);
 	}
 	.addr-head em {
 		font-style: normal;
@@ -586,9 +717,9 @@
 	.guests {
 		display: grid;
 		gap: 0.45rem;
-		border: 1px solid var(--line);
+		border: 1px solid rgba(58, 36, 32, 0.28);
 		padding: 0.8rem;
-		background: rgba(0, 0, 0, 0.12);
+		background: rgba(255, 253, 247, 0.28);
 	}
 	.g-cols,
 	.g-row {
@@ -599,9 +730,10 @@
 	}
 	.g-cols span {
 		font-size: 0.66rem;
+		font-weight: 700;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
-		color: var(--ink-faint);
+		color: var(--ink-label);
 	}
 	.g-plus {
 		display: inline-flex;
@@ -618,7 +750,7 @@
 	.g-x {
 		background: none;
 		border: none;
-		color: var(--ink-faint);
+		color: rgba(58, 36, 32, 0.55);
 		font-size: 1.2rem;
 		line-height: 1;
 		cursor: pointer;
@@ -626,16 +758,17 @@
 		transition: color 0.2s ease;
 	}
 	.g-x:hover {
-		color: var(--blush);
+		color: #7a1f28;
 	}
 	.g-rsvp {
 		grid-column: 1 / -1;
 		font-size: 0.85rem;
-		color: #9db07f;
+		font-weight: 600;
+		color: #3f5526;
 		padding-left: 0.2rem;
 	}
 	.g-rsvp.declines {
-		color: var(--blush);
+		color: #6b1a22;
 	}
 	.g-note {
 		grid-column: 1 / -1;
@@ -653,19 +786,23 @@
 		color: var(--ink-faint);
 	}
 	.mini-btn {
-		background: none;
-		border: 1px solid var(--line);
-		color: var(--ink-muted);
+		background: rgba(255, 253, 247, 0.4);
+		border: 1px solid rgba(58, 36, 32, 0.4);
+		color: var(--chocolate);
 		font-family: var(--body);
 		font-size: 0.72rem;
+		font-weight: 600;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		padding: 0.35rem 0.8rem;
 		cursor: pointer;
-		transition: border-color 0.2s ease;
+		transition:
+			border-color 0.2s ease,
+			color 0.2s ease;
 	}
 	.mini-btn:hover {
-		border-color: var(--candle);
+		border-color: var(--claret);
+		color: var(--claret);
 	}
 
 	.foot {
@@ -695,11 +832,40 @@
 		cursor: default;
 	}
 	.dirty-note {
-		color: var(--candle);
+		color: var(--claret);
+		font-weight: 600;
 		font-size: 0.85rem;
 	}
-	.del-form {
-		justify-self: start;
+
+	/* Everything below the save button: the two per-party sends on the left, delete
+	   pushed to the far right. Both are secondary to "Save changes" and sized to
+	   say so — small, outlined, no fill. */
+	.tail {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.9rem 1.2rem;
+		flex-wrap: wrap;
+		border-top: 1px solid rgba(58, 36, 32, 0.22);
+		padding-top: 0.9rem;
+	}
+	.send-row {
+		display: flex;
+		align-items: center;
+		gap: 0.55rem;
+		flex-wrap: wrap;
+	}
+	.tail-label {
+		font-size: 0.66rem;
+		font-weight: 700;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--ink-label);
+		opacity: 0.8;
+	}
+	.tail-note {
+		font-size: 0.8rem;
+		color: var(--ink-faint);
 	}
 
 	@media (max-width: 760px) {

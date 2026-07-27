@@ -342,6 +342,7 @@
 							<PartyEditor
 								bind:this={editors[d.key]}
 								draft={d}
+								smsConfigured={data.smsConfigured}
 								{notify}
 								onSaved={(name) => draftSaved(d.key, name)}
 								onDiscard={() => {
@@ -392,7 +393,12 @@
 						{#if formatAddress(party)}<p class="hint">Address: {formatAddress(party)}</p>{/if}
 						{#if party.song_requests}<p class="hint">Songs: {party.song_requests}</p>{/if}
 						{#if party.message}<p class="hint">Note: “{party.message}”</p>{/if}
-						<PartyEditor {party} {notify} onDirty={(v) => (dirtyEdits[party.id] = v)} />
+						<PartyEditor
+							{party}
+							{notify}
+							smsConfigured={data.smsConfigured}
+							onDirty={(v) => (dirtyEdits[party.id] = v)}
+						/>
 					</div>
 				</details>
 			{:else}

@@ -10,6 +10,7 @@
 		confirmLabel = 'Confirm',
 		message = '',
 		kind = 'primary',
+		confirmKind = kind,
 		small = false,
 		disabled = false,
 		busy = false,
@@ -20,6 +21,9 @@
 		confirmLabel?: string;
 		message?: string;
 		kind?: 'primary' | 'danger' | 'quiet';
+		/** The armed step, when it needs more weight than the resting button —
+		    a quiet button whose confirm sits beside other quiet buttons. */
+		confirmKind?: 'primary' | 'danger' | 'quiet';
 		small?: boolean;
 		disabled?: boolean;
 		busy?: boolean;
@@ -50,7 +54,7 @@
 		{#if message}<span class="msg" class:small>{message}</span>{/if}
 		<button
 			type={onConfirm ? 'button' : 'submit'}
-			class="btn go {kind}"
+			class="btn go {confirmKind}"
 			class:small
 			onclick={() => {
 				if (onConfirm) {
@@ -111,9 +115,11 @@
 	.primary:hover:not(:disabled) {
 		background: var(--burgundy);
 	}
+	/* Mixed from --blush rather than hardcoded, so the button keeps its weight on
+	   the party editor's parchment, where --blush is re-pointed to a paper red. */
 	.danger {
 		background: none;
-		border: 1px solid rgba(201, 159, 148, 0.4);
+		border: 1px solid color-mix(in srgb, var(--blush) 45%, transparent);
 		color: var(--blush);
 	}
 	.danger:hover:not(:disabled) {
@@ -128,6 +134,6 @@
 		border-color: var(--candle);
 	}
 	.go.danger {
-		background: rgba(201, 159, 148, 0.12);
+		background: color-mix(in srgb, var(--blush) 12%, transparent);
 	}
 </style>

@@ -4,7 +4,7 @@ import { db, GUEST_COLS_FULL } from '$lib/server/supabase';
 import { ADDRESS_COLS } from '$lib/server/party';
 import { isAdmin, login, logout, makeCode } from '$lib/server/admin';
 import { sendAllReminders } from '$lib/server/reminders';
-import { sendInvitations } from '$lib/server/invites';
+import { sendInvitations, sendInvitationToParty } from '$lib/server/invites';
 import { sendBroadcast, type Audience, type BroadcastChannel } from '$lib/server/broadcast';
 import { smsEnabled } from '$lib/server/sms';
 import { siteUrl, siteUrlIsLocal } from '$lib/server/site';
@@ -238,6 +238,32 @@ export const actions: Actions = {
 			return { inviteResult: result };
 		} catch (e) {
 			return fail(500, { inviteError: e instanceof Error ? e.message : 'Invitation run failed.' });
+		}
+	},
+
+	/** One party, one channel — the send buttons in the party editor. */
+	sendOne: async ({ request, cookies }) => {
+		if (!isAdmin(cookies)) return fail(403, { sendOneError: 'Not signed in.' });
+		const form = await request.formData();
+		const id = String(form.get('id') ?? '').trim();
+		const channel = form.get('channel') === 'sms' ? 'sms' : 'email';
+		if (!id) return fail(400, { sendOneError: 'Save the party before sending to it.' });
+		try {
+			const result = await sendInvitationToParty({ partyId: id, channel });
+			if (result.unreachable) {
+				return fail(400, {
+					sendOneError:
+						channel === 'sms'
+							? `No phone number on file for ${result.name}.`
+							: `No email address on file for ${result.name}.`
+				});
+			}
+			if (result.failed) {
+				return fail(500, { sendOneError: result.error || 'The send failed.' });
+			}
+			return { sendOneResult: result };
+		} catch (e) {
+			return fail(500, { sendOneError: e instanceof Error ? e.message : 'The send failed.' });
 		}
 	},
 
