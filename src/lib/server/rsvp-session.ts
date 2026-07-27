@@ -35,16 +35,25 @@ export function grantParty(cookies: Cookies, partyId: string) {
 	});
 }
 
-/** Does this browser hold a valid token for `partyId`? */
-export function hasParty(cookies: Cookies, partyId: string): boolean {
+/**
+ * The party this browser has already unlocked, or null. Lets the home page
+ * re-open someone's invitation on a later visit — after the `?code=` has been
+ * stripped from the address bar, or when they simply come back a week later.
+ */
+export function sessionPartyId(cookies: Cookies): string | null {
 	const raw = cookies.get(COOKIE);
-	if (!raw) return false;
+	if (!raw) return null;
 	const dot = raw.lastIndexOf('.');
-	if (dot < 0) return false;
+	if (dot < 0) return null;
 	const id = raw.slice(0, dot);
 	const mac = raw.slice(dot + 1);
-	if (id !== partyId) return false;
-	const expected = sign(partyId);
-	if (mac.length !== expected.length) return false;
-	return timingSafeEqual(Buffer.from(mac), Buffer.from(expected));
+	if (!id) return null;
+	const expected = sign(id);
+	if (mac.length !== expected.length) return null;
+	return timingSafeEqual(Buffer.from(mac), Buffer.from(expected)) ? id : null;
+}
+
+/** Does this browser hold a valid token for `partyId`? */
+export function hasParty(cookies: Cookies, partyId: string): boolean {
+	return !!partyId && sessionPartyId(cookies) === partyId;
 }

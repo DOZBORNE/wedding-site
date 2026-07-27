@@ -35,7 +35,7 @@ export async function sendAllReminders(opts: { includeSms: boolean; force?: bool
 			skipped++;
 			continue;
 		}
-		const url = `${site}/rsvp?code=${party.code}`;
+		const url = `${site}/?code=${party.code}`;
 		const guests = (party.wed_guests as Guest[]) ?? [];
 
 		const emailTargets = dedupeRecipients([party.contact_email, ...guests.map((g) => g.email)]);

@@ -14,6 +14,14 @@ create table if not exists wed_parties (
   notes          text not null default '',       -- private admin notes
   song_requests  text not null default '',
   message        text not null default '',       -- note from the party on RSVP
+  -- Mailing address. Collected as a required part of the RSVP form (thank-you
+  -- notes, announcements), and editable in /admin.
+  address_line1  text not null default '',
+  address_line2  text not null default '',
+  city           text not null default '',
+  state_region   text not null default '',
+  postal_code    text not null default '',
+  country        text not null default '',
   invited_at     timestamptz,                    -- when the invitation was sent
   responded_at   timestamptz,
   reminded_at    timestamptz,
@@ -68,6 +76,12 @@ create index if not exists idx_wed_messages_party on wed_messages(party_id, kind
 -- columns and table. `create table if not exists` above is a no-op on old DBs,
 -- so these fill the gap.
 alter table wed_parties add column if not exists invited_at timestamptz;
+alter table wed_parties add column if not exists address_line1 text not null default '';
+alter table wed_parties add column if not exists address_line2 text not null default '';
+alter table wed_parties add column if not exists city          text not null default '';
+alter table wed_parties add column if not exists state_region  text not null default '';
+alter table wed_parties add column if not exists postal_code   text not null default '';
+alter table wed_parties add column if not exists country       text not null default '';
 alter table wed_guests add column if not exists first_name text not null default '';
 alter table wed_guests add column if not exists last_name  text not null default '';
 alter table wed_guests add column if not exists email      text not null default '';

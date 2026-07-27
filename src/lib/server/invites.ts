@@ -49,7 +49,9 @@ export async function sendInvitations(opts: {
 	};
 
 	for (const party of parties ?? []) {
-		const url = `${site}/rsvp?code=${party.code}`;
+		// Lands at the top of the site, not on a bare form — the code opens their
+		// envelope once they've scrolled down to it.
+		const url = `${site}/?code=${party.code}`;
 		const guests = (party.wed_guests as Guest[]) ?? [];
 		let partySent = 0;
 		let partyFailed = 0;

@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db, GUEST_COLS } from '$lib/server/supabase';
+import { PARTY_COLS, toPublicParty } from '$lib/server/party';
 import { grantParty } from '$lib/server/rsvp-session';
-import type { Guest, PublicParty } from '$lib/types';
 
 /**
  * Unlock a party with its invite code. On success we set a party-scoped cookie
@@ -22,7 +22,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 	const { data } = await db()
 		.from('wed_parties')
-		.select(`id, code, display_name, responded_at, wed_guests ( ${GUEST_COLS} )`)
+		.select(`${PARTY_COLS}, code, wed_guests ( ${GUEST_COLS} )`)
 		.eq('id', partyId)
 		.maybeSingle();
 
@@ -33,13 +33,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		);
 	}
 
-	grantParty(cookies, data.id);
+	grantParty(cookies, data.id as string);
 
-	const party: PublicParty = {
-		id: data.id,
-		display_name: data.display_name,
-		responded_at: data.responded_at,
-		guests: ((data.wed_guests as Guest[]) ?? []).sort((a, b) => a.sort_order - b.sort_order)
-	};
-	return json({ party });
+	return json({ party: toPublicParty(data) });
 };

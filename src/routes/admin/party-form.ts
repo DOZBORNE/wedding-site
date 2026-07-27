@@ -1,4 +1,4 @@
-import type { Guest } from '$lib/types';
+import { blankAddress, type Guest, type PartyAddress } from '$lib/types';
 import { toE164 } from '$lib/phone';
 
 /** A party as the admin page sees it — full contact info, RSVP state, timestamps. */
@@ -15,7 +15,33 @@ export type AdminPartyView = {
 	responded_at: string | null;
 	reminded_at: string | null;
 	guests: Guest[];
+} & PartyAddress;
+
+/** The address fields, in the order they're laid out in the editor. */
+export const ADDRESS_FIELDS = [
+	'address_line1',
+	'address_line2',
+	'city',
+	'state_region',
+	'postal_code',
+	'country'
+] as const;
+
+/** Pull just the address out of a wider record — a party view, a draft, a form. */
+export const pickAddress = (src: Partial<PartyAddress>): PartyAddress => {
+	const a = blankAddress();
+	for (const f of ADDRESS_FIELDS) a[f] = String(src[f] ?? '');
+	return a;
 };
+
+/** One line, for the party list and for copying onto an envelope. */
+export function formatAddress(a: Partial<PartyAddress>): string {
+	const street = [a.address_line1, a.address_line2].map((s) => (s ?? '').trim()).filter(Boolean);
+	const city = [a.city, a.state_region].map((s) => (s ?? '').trim()).filter(Boolean).join(', ');
+	const tail = [city, (a.postal_code ?? '').trim()].filter(Boolean).join(' ');
+	const country = (a.country ?? '').trim();
+	return [...street, tail, country === 'United States' ? '' : country].filter(Boolean).join(' · ');
+}
 
 export type GuestDraft = {
 	/** Present on guests that already exist in the database. */
@@ -37,6 +63,7 @@ export type PartyDraft = {
 	contact_email: string;
 	contact_phone: string;
 	notes: string;
+	address: PartyAddress;
 	guests: GuestDraft[];
 };
 
@@ -48,6 +75,7 @@ export const blankParty = (key: string): PartyDraft => ({
 	contact_email: '',
 	contact_phone: '',
 	notes: '',
+	address: blankAddress(),
 	guests: [blankGuest()]
 });
 

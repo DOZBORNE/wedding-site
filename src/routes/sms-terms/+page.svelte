@@ -59,7 +59,7 @@
 				</p>
 				<blockquote>
 					You're invited! {COUPLE.first} &amp; {COUPLE.partnerFirst} are getting married {WEDDING.dateLabel}
-					at {VENUE.name}. Please RSVP: https://jesslovesdev.com/rsvp?code=ABC123 (Reply STOP to opt
+					at {VENUE.name}. Please RSVP: https://jesslovesdev.com/?code=ABC123 (Reply STOP to opt
 					out)
 				</blockquote>
 			</section>

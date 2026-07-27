@@ -157,7 +157,8 @@ export async function sendRsvpConfirmation(to: string, partyName: string, guests
 		shell(`
 			<p style="font-size:16px;">Thank you, <strong>${partyName}</strong> — your reply has been received.</p>
 			<table style="width:100%;border-collapse:collapse;font-size:15px;">${rows}</table>
-			<p style="font-size:14px;font-style:italic;">Need to change something? Just reply to this email or visit the RSVP page again.</p>
+			<p style="font-size:14px;font-style:italic;">Need to change something? Just reply to this email,
+			or open our site again on this device — your invitation will be right where you left it.</p>
 		`)
 	);
 }
@@ -173,11 +174,11 @@ export async function sendInvite(to: string, partyName: string, rsvpUrl: string)
 			<div style="text-align:center;font-size:14px;font-style:italic;color:#4A2E1F;margin:20px 0;">
 				Ceremony ${WEDDING.ceremonyTime} · Reception ${WEDDING.receptionTime}<br/>${VENUE.address}
 			</div>
-			<p style="font-size:15px;">We would be honored to have you with us. Please let us know if you can
-			join — it takes less than a minute:</p>
-			${button(rsvpUrl, 'Break the seal · RSVP')}
+			<p style="font-size:15px;">We would be honored to have you with us. The link below opens our
+			wedding site — have a look around, and your invitation is waiting for you at the bottom:</p>
+			${button(rsvpUrl, 'Open our wedding site')}
 			<p style="font-size:14px;font-style:italic;">Kindly reply by ${WEDDING.rsvpDeadlineLabel}.
-			The button above opens your invitation directly — no code needed.</p>
+			Scroll down to the sealed envelope, press the seal, and your invitation opens — no code needed.</p>
 		`)
 	);
 }
@@ -190,7 +191,7 @@ export async function sendReminder(to: string, partyName: string, rsvpUrl: strin
 			<p style="font-size:16px;">Dear <strong>${partyName}</strong>,</p>
 			<p style="font-size:15px;">We're so hoping you can join us at ${VENUE.name} on ${WEDDING.dateLabel}.
 			We haven't received your reply yet — it takes less than a minute:</p>
-			${button(rsvpUrl, 'Break the seal · RSVP')}
+			${button(rsvpUrl, 'Open our wedding site')}
 			<p style="font-size:14px;font-style:italic;">Please reply by ${WEDDING.rsvpDeadlineLabel}.</p>
 		`)
 	);

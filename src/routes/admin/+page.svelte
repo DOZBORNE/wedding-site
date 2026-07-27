@@ -5,7 +5,7 @@
 	import { MEALS } from '$lib/config';
 	import ConfirmButton from './ConfirmButton.svelte';
 	import PartyEditor from './PartyEditor.svelte';
-	import { blankParty, type PartyDraft } from './party-form';
+	import { blankParty, formatAddress, type PartyDraft } from './party-form';
 
 	let { data } = $props();
 
@@ -120,6 +120,7 @@
 				p.code,
 				p.contact_email,
 				p.contact_phone,
+				formatAddress(p),
 				...p.guests.flatMap((g) => [g.name, g.email ?? '', g.phone ?? ''])
 			].some((s) => s.toLowerCase().includes(q))
 		);
@@ -127,7 +128,7 @@
 
 	async function copyLink(code: string) {
 		try {
-			await navigator.clipboard.writeText(`${location.origin}/rsvp?code=${code}`);
+			await navigator.clipboard.writeText(`${location.origin}/?code=${code}`);
 			notify('Invite link copied.');
 		} catch {
 			notify('Couldn’t reach the clipboard — copy the link by hand.', 'err');
@@ -331,13 +332,14 @@
 					</summary>
 					<div class="p-body">
 						<p class="hint linkline">
-							Invite link <code>/rsvp?code={party.code}</code>
+							Invite link <code>/?code={party.code}</code>
 							<button class="mini-btn" type="button" onclick={() => copyLink(party.code)}>
 								Copy
 							</button>
 							{#if party.invited_at}· invited {fmtDate(party.invited_at)}{/if}
 							{#if party.reminded_at}· reminded {fmtDate(party.reminded_at)}{/if}
 						</p>
+						{#if formatAddress(party)}<p class="hint">Address: {formatAddress(party)}</p>{/if}
 						{#if party.song_requests}<p class="hint">Songs: {party.song_requests}</p>{/if}
 						{#if party.message}<p class="hint">Note: “{party.message}”</p>{/if}
 						<PartyEditor {party} {notify} onDirty={(v) => (dirtyEdits[party.id] = v)} />

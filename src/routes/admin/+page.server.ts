@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { db, GUEST_COLS_FULL } from '$lib/server/supabase';
+import { ADDRESS_COLS } from '$lib/server/party';
 import { isAdmin, login, logout, makeCode } from '$lib/server/admin';
 import { sendAllReminders } from '$lib/server/reminders';
 import { sendInvitations } from '$lib/server/invites';
@@ -9,7 +10,7 @@ import { smsEnabled } from '$lib/server/sms';
 import { siteUrl, siteUrlIsLocal } from '$lib/server/site';
 import { toE164 } from '$lib/phone';
 import type { Guest } from '$lib/types';
-import type { AdminPartyView } from './party-form';
+import { ADDRESS_FIELDS, type AdminPartyView } from './party-form';
 
 export const load: PageServerLoad = async ({ cookies }) => {
 	if (!isAdmin(cookies)) return { authed: false as const };
@@ -19,7 +20,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 		db()
 			.from('wed_parties')
 			.select(
-				`id, code, display_name, contact_email, contact_phone, notes, song_requests, message, invited_at, responded_at, reminded_at, wed_guests ( ${GUEST_COLS_FULL} )`
+				`id, code, display_name, contact_email, contact_phone, notes, song_requests, message, ${ADDRESS_COLS}, invited_at, responded_at, reminded_at, wed_guests ( ${GUEST_COLS_FULL} )`
 			)
 			.order('display_name'),
 		db()
@@ -134,6 +135,17 @@ export const actions: Actions = {
 			});
 		}
 
+		// Addresses are optional here — the couple can add one by hand, but the
+		// guest's own RSVP is what usually fills them in.
+		const address = Object.fromEntries(
+			ADDRESS_FIELDS.map((f) => [
+				f,
+				String(form.get(f) ?? '')
+					.trim()
+					.slice(0, 200)
+			])
+		);
+
 		const fields = {
 			display_name: displayName,
 			contact_email: String(form.get('contact_email') ?? '')
@@ -142,7 +154,8 @@ export const actions: Actions = {
 			contact_phone: canonPhone(form.get('contact_phone')),
 			notes: String(form.get('notes') ?? '')
 				.trim()
-				.slice(0, 2000)
+				.slice(0, 2000),
+			...address
 		};
 
 		// New party: insert it and its guests, done.

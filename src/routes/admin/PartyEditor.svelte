@@ -7,12 +7,15 @@
 	import ConfirmButton from './ConfirmButton.svelte';
 	import PhoneInput from './PhoneInput.svelte';
 	import { toE164 } from '$lib/phone';
+	import { blankAddress } from '$lib/types';
 	import {
+		ADDRESS_FIELDS,
 		blankGuest,
 		emailError,
 		isBlankRow,
 		parsePastedGuests,
 		phoneError,
+		pickAddress,
 		type AdminPartyView,
 		type GuestDraft,
 		type PartyDraft
@@ -42,6 +45,7 @@
 		contact_email: p.contact_email,
 		contact_phone: p.contact_phone,
 		notes: p.notes,
+		address: pickAddress(p),
 		guests: p.guests.map((g) => ({
 			id: g.id,
 			name: g.name,
@@ -58,6 +62,8 @@
 	// svelte-ignore state_referenced_locally
 	const initial = party ? fromParty(party) : draft!;
 	if (!initial.guests.length) initial.guests.push(blankGuest());
+	// A draft saved before addresses existed won't have one — fill it in rather than crash.
+	if (!initial.address) initial.address = blankAddress();
 	let model = $state<PartyDraft>(initial);
 
 	/** Phones are stored as +E.164 so Twilio never has to guess. */
@@ -80,6 +86,7 @@
 			contact_email: m.contact_email.trim(),
 			contact_phone: canonPhone(m.contact_phone),
 			notes: m.notes.trim(),
+			address: pickAddress(m.address),
 			guests: snapGuests(m)
 		});
 
@@ -93,6 +100,7 @@
 
 	const guestsJson = $derived(JSON.stringify(snapGuests(model)));
 	const guestCount = $derived(model.guests.filter((g) => !isBlankRow(g)).length);
+	const addressFilled = $derived(ADDRESS_FIELDS.some((f) => model.address[f].trim()));
 
 	// ── validation ──────────────────────────────────────────────────────────
 	// Errors show per field once it's been left (or after a save attempt) —
@@ -379,6 +387,45 @@
 			{#if attempted && guestCount === 0}<em class="f-err">Add at least one guest.</em>{/if}
 		</div>
 
+		<div class="addr">
+			<div class="addr-head">
+				<span>Mailing address</span>
+				<em>
+					{addressFilled ? 'On file' : 'Blank — guests fill this in when they RSVP'}
+				</em>
+			</div>
+			<div class="addr-grid">
+				<label class="f wide">
+					<span>Street</span>
+					<input
+						name="address_line1"
+						bind:value={model.address.address_line1}
+						placeholder="123 Magnolia Lane"
+					/>
+				</label>
+				<label class="f wide">
+					<span>Apt / suite</span>
+					<input name="address_line2" bind:value={model.address.address_line2} placeholder="Apt 4B" />
+				</label>
+				<label class="f">
+					<span>City</span>
+					<input name="city" bind:value={model.address.city} placeholder="Birmingham" />
+				</label>
+				<label class="f">
+					<span>State</span>
+					<input name="state_region" bind:value={model.address.state_region} placeholder="Alabama" />
+				</label>
+				<label class="f">
+					<span>ZIP</span>
+					<input name="postal_code" bind:value={model.address.postal_code} placeholder="35203" />
+				</label>
+				<label class="f">
+					<span>Country</span>
+					<input name="country" bind:value={model.address.country} placeholder="United States" />
+				</label>
+			</div>
+		</div>
+
 		<label class="f">
 			<span>Private notes</span>
 			<input name="notes" bind:value={model.notes} placeholder="Only we see these" />
@@ -498,6 +545,41 @@
 		align-items: center;
 		gap: 0.6rem;
 		flex-wrap: wrap;
+	}
+
+	/* mailing address */
+	.addr {
+		border: 1px solid var(--line);
+		padding: 0.8rem;
+		background: rgba(0, 0, 0, 0.12);
+		display: grid;
+		gap: 0.6rem;
+	}
+	.addr-head {
+		display: flex;
+		align-items: baseline;
+		gap: 0.6rem;
+		flex-wrap: wrap;
+	}
+	.addr-head span {
+		font-size: 0.7rem;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--ink-faint);
+	}
+	.addr-head em {
+		font-style: normal;
+		font-size: 0.78rem;
+		color: var(--ink-faint);
+		opacity: 0.8;
+	}
+	.addr-grid {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 0.6rem;
+	}
+	.addr-grid .wide {
+		grid-column: span 2;
 	}
 
 	/* guest rows */
@@ -623,6 +705,12 @@
 	@media (max-width: 760px) {
 		.top-grid {
 			grid-template-columns: 1fr;
+		}
+		.addr-grid {
+			grid-template-columns: 1fr 1fr;
+		}
+		.addr-grid .wide {
+			grid-column: 1 / -1;
 		}
 		.g-cols {
 			display: none;

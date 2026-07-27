@@ -21,7 +21,7 @@
 <Setting />
 <Day />
 <Travel />
-<RsvpSection />
+<RsvpSection party={data.party} hasCodeInUrl={data.hasCodeInUrl} />
 <Guestbook entries={data.guestbook} />
 <Faq />
 <Registry />

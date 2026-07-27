@@ -51,7 +51,7 @@ export async function sendBroadcast(opts: {
 		if (opts.audience === 'attending' && !guests.some((g) => g.attending === true)) continue;
 		recipients++;
 
-		const url = `${site}/rsvp?code=${party.code}`;
+		const url = `${site}/?code=${party.code}`;
 
 		if (wantEmail) {
 			const emailTargets = dedupeRecipients([party.contact_email, ...guests.map((g) => g.email)]);

@@ -6,7 +6,7 @@ import { logMessage } from '$lib/server/messages';
 import { hasParty } from '$lib/server/rsvp-session';
 import { isAdmin } from '$lib/server/admin';
 import { MEALS, WEDDING } from '$lib/config';
-import type { Guest } from '$lib/types';
+import { addressIsComplete, type Guest, type PartyAddress } from '$lib/types';
 
 type SubmitGuest = {
 	id: string;
@@ -19,6 +19,23 @@ type SubmitGuest = {
 function rsvpClosed(): boolean {
 	const deadline = new Date(WEDDING.rsvpDeadlineISO).getTime();
 	return Number.isFinite(deadline) && Date.now() > deadline;
+}
+
+/** Trim and cap every address field. The browser validates too — this is the one that counts. */
+function readAddress(raw: unknown): PartyAddress {
+	const a = (raw ?? {}) as Record<string, unknown>;
+	const take = (k: keyof PartyAddress, max: number) =>
+		String(a[k] ?? '')
+			.trim()
+			.slice(0, max);
+	return {
+		address_line1: take('address_line1', 200),
+		address_line2: take('address_line2', 200),
+		city: take('city', 100),
+		state_region: take('state_region', 100),
+		postal_code: take('postal_code', 20),
+		country: take('country', 100) || 'United States'
+	};
 }
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
@@ -43,6 +60,15 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		return json(
 			{ error: `RSVPs closed on ${WEDDING.rsvpDeadlineLabel}. Please reach out to us directly.` },
 			{ status: 403 }
+		);
+	}
+
+	// A mailing address is required of everyone who replies — accepting or not.
+	const address = readAddress(body.address);
+	if (!addressIsComplete(address)) {
+		return json(
+			{ error: 'Please fill in your street address, city, state, and ZIP.', field: 'address' },
+			{ status: 400 }
 		);
 	}
 
@@ -90,6 +116,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			responded_at: new Date().toISOString(),
 			song_requests: String(body.songRequests ?? '').slice(0, 500),
 			message: String(body.message ?? '').slice(0, 1000),
+			...address,
 			...(contactEmail ? { contact_email: contactEmail } : {})
 		})
 		.eq('id', partyId);
