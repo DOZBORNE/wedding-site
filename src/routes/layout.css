@@ -22,6 +22,11 @@
 	--ink-muted: #c2b29a;
 	--ink-faint: #9d8f7a;
 	--ink-on-paper: #3a2420;
+	/* Darker than --chocolate, for the small uppercase type on parchment (field
+	   labels, legends, section heads) where 11–13px of a delicate serif needs all
+	   the contrast it can get. */
+	--ink-label: #33200f;
+	--rule-on-paper: rgba(58, 36, 32, 0.55);
 	--line: rgba(230, 217, 198, 0.18);
 
 	--display: 'Bodoni Moda', 'Didot', 'Bodoni 72', Georgia, serif;
@@ -110,11 +115,11 @@ h4 {
 
 .eyebrow {
 	font-family: var(--body);
-	font-size: 0.8rem;
-	font-weight: 600;
-	letter-spacing: 0.34em;
+	font-size: 0.85rem;
+	font-weight: 700;
+	letter-spacing: 0.3em;
 	text-transform: uppercase;
-	color: #9aa08c;
+	color: #aab09a;
 }
 
 .block {
@@ -127,7 +132,8 @@ h4 {
 	color: var(--ink-muted);
 	font-style: italic;
 	font-weight: 600;
-	font-size: 1.22rem;
+	font-size: 1.28rem;
+	line-height: 1.6;
 }
 
 /* Romanesque arch — the signature shape */
@@ -287,9 +293,10 @@ svg.vines {
 	color: var(--parchment);
 	background: transparent;
 	font-family: var(--body);
-	font-size: 0.82rem;
-	letter-spacing: 0.32em;
-	text-indent: 0.32em;
+	font-size: 0.88rem;
+	font-weight: 600;
+	letter-spacing: 0.26em;
+	text-indent: 0.26em;
 	text-transform: uppercase;
 	padding: 1rem 2.4rem;
 	cursor: pointer;
@@ -307,11 +314,12 @@ svg.vines {
 	color: var(--parchment);
 	border: 1px solid var(--claret);
 	font-family: var(--body);
-	font-size: 0.84rem;
-	letter-spacing: 0.32em;
-	text-indent: 0.32em;
+	font-size: 0.92rem;
+	font-weight: 700;
+	letter-spacing: 0.24em;
+	text-indent: 0.24em;
 	text-transform: uppercase;
-	padding: 1rem 1.5rem;
+	padding: 1.05rem 1.5rem;
 	cursor: pointer;
 	transition: background 0.25s ease;
 }
@@ -323,37 +331,50 @@ svg.vines {
 	cursor: default;
 }
 
-/* fields on parchment */
+/* Fields on parchment.
+   Everything here is sized for filling in, not for admiring: the labels are bold
+   with the tracking pulled back so they read as words rather than spaced letters,
+   and every input sits at 1.12rem — comfortably over the 16px below which iOS
+   zooms the page on focus. */
 .field label {
 	display: block;
-	font-size: 0.72rem;
-	letter-spacing: 0.28em;
+	font-size: 0.82rem;
+	font-weight: 700;
+	letter-spacing: 0.15em;
 	text-transform: uppercase;
-	color: var(--chocolate);
-	margin-bottom: 0.35rem;
+	color: var(--ink-label);
+	margin-bottom: 0.4rem;
 }
 .field input,
 .field textarea,
 .field select {
 	width: 100%;
-	background: transparent;
+	background: rgba(255, 253, 247, 0.35);
 	border: none;
-	border-bottom: 1px solid rgba(58, 36, 32, 0.45);
+	border-bottom: 2px solid var(--rule-on-paper);
 	font-family: var(--body);
-	font-size: 1.1rem;
+	font-size: 1.12rem;
+	font-weight: 600;
 	color: var(--ink-on-paper);
-	padding: 0.35rem 0.1rem;
+	padding: 0.5rem 0.55rem;
 	border-radius: 0;
+}
+.field textarea {
+	line-height: 1.5;
 }
 .field input::placeholder,
 .field textarea::placeholder {
-	color: rgba(58, 36, 32, 0.45);
+	color: rgba(58, 36, 32, 0.6);
+	font-weight: 500;
 	font-style: italic;
 }
+/* The filled tint deepens on focus so the field you're in is unmistakable —
+   a colour change on a 2px rule alone is easy to miss on a phone. */
 .field input:focus,
 .field textarea:focus,
 .field select:focus {
 	outline: none;
+	background: rgba(255, 253, 247, 0.75);
 	border-bottom-color: var(--claret);
 }
 

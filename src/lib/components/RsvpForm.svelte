@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { MEALS, REGISTRY_URL, WEDDING } from "$lib/config";
+    import { REGISTRY_URL, WEDDING } from "$lib/config";
     import {
         addressIsComplete,
         blankAddress,
@@ -17,6 +17,8 @@
         name: string;
         is_plus_one: boolean;
         attending: boolean;
+        /* There's no menu yet, so nothing collects this — it's carried through
+           untouched so a value already on the record survives a re-save. */
         meal: string;
         dietary: string;
         /** Plus-one seats stay folded away until someone actually asks for one. */
@@ -63,7 +65,7 @@
             attending: g.is_plus_one
                 ? g.attending === true
                 : (g.attending ?? true),
-            meal: g.meal || MEALS[0],
+            meal: g.meal,
             dietary: g.dietary,
             revealed: !g.is_plus_one || !!g.name.trim() || g.attending === true,
         }));
@@ -424,15 +426,6 @@
                             </button>
                         </div>
                         {#if row.attending}
-                            <select
-                                class="g-meal"
-                                bind:value={rows[i].meal}
-                                aria-label="Meal for {row.name || 'guest'}"
-                            >
-                                {#each MEALS as meal (meal)}
-                                    <option value={meal}>{meal}</option>
-                                {/each}
-                            </select>
                             <input
                                 class="g-diet"
                                 type="text"
@@ -534,7 +527,7 @@
                             >{showErr("postal_code")}</em
                         >{/if}
                 </div>
-                <div class="field">
+                <div class="field span-country">
                     <label for="addr-country">Country</label>
                     <input
                         id="addr-country"
@@ -547,24 +540,26 @@
             </div>
         </fieldset>
 
-        <div class="field">
-            <label for="rsvp-email">Email for your confirmation</label>
-            <input
-                id="rsvp-email"
-                type="email"
-                bind:value={contactEmail}
-                placeholder="you@example.com"
-                autocomplete="email"
-            />
-        </div>
-        <div class="field">
-            <label for="rsvp-songs">Song requests</label>
-            <input
-                id="rsvp-songs"
-                type="text"
-                bind:value={songRequests}
-                placeholder="the song that gets you dancing"
-            />
+        <div class="tail-pair">
+            <div class="field">
+                <label for="rsvp-email">Email for your confirmation</label>
+                <input
+                    id="rsvp-email"
+                    type="email"
+                    bind:value={contactEmail}
+                    placeholder="you@example.com"
+                    autocomplete="email"
+                />
+            </div>
+            <div class="field">
+                <label for="rsvp-songs">Song requests</label>
+                <input
+                    id="rsvp-songs"
+                    type="text"
+                    bind:value={songRequests}
+                    placeholder="the song that gets you dancing"
+                />
+            </div>
         </div>
         <div class="field">
             <label for="rsvp-message">A note for us</label>
@@ -621,48 +616,60 @@
     }
     .sub {
         font-style: italic;
-        color: var(--chocolate);
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: var(--ink-on-paper);
         margin: 0.4rem 0 1.6rem;
         text-align: center;
     }
     .replied-tag {
         margin: 0.5rem auto 1.5rem;
         text-align: center;
-        font-size: 0.72rem;
-        letter-spacing: 0.22em;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: var(--chocolate);
-        border: 1px solid rgba(58, 36, 32, 0.35);
+        color: var(--ink-label);
+        border: 1px solid rgba(58, 36, 32, 0.45);
         padding: 0.5rem 0.9rem;
         max-width: max-content;
     }
     .roster-line {
         margin: -0.9rem 0 1.5rem;
         text-align: center;
-        font-size: 0.95rem;
+        font-size: 1rem;
+        font-weight: 600;
         font-style: italic;
         color: var(--chocolate);
-        opacity: 0.8;
     }
     .rsvp-form {
         display: grid;
-        gap: 1.15rem;
+        gap: 1.35rem;
         text-align: left;
     }
+    /* Errors are the one thing on this card that must interrupt — given a tinted
+       band and a rule so they don't read as more italic garden prose. */
     .error {
         margin: 0;
-        color: #7a1f28;
+        color: #6b1a22;
+        font-weight: 600;
         font-style: italic;
+        font-size: 1.05rem;
+        background: rgba(122, 31, 40, 0.09);
+        border-left: 3px solid #7a1f28;
+        padding: 0.6rem 0.8rem;
     }
     .f-err {
         display: block;
-        margin-top: 0.25rem;
+        margin-top: 0.3rem;
         font-style: normal;
-        font-size: 0.82rem;
-        color: #7a1f28;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #6b1a22;
     }
     .field input.bad {
         border-bottom-color: #7a1f28;
+        background: rgba(122, 31, 40, 0.06);
     }
     .link-btn {
         background: none;
@@ -670,10 +677,14 @@
         color: var(--chocolate);
         font-family: var(--body);
         font-style: italic;
-        font-size: 0.95rem;
+        font-weight: 600;
+        font-size: 1.05rem;
+        text-decoration: underline;
+        text-underline-offset: 0.25em;
+        text-decoration-color: rgba(58, 36, 32, 0.4);
         cursor: pointer;
         justify-self: center;
-        padding: 0.2rem;
+        padding: 0.4rem;
     }
     .link-btn:hover {
         color: var(--claret);
@@ -683,25 +694,27 @@
         gap: 0.6rem;
     }
     .matches-label {
-        font-size: 0.72rem;
-        letter-spacing: 0.28em;
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.15em;
         text-transform: uppercase;
-        color: var(--chocolate);
+        color: var(--ink-label);
     }
     .matches-note {
         margin: 0;
-        font-size: 0.85rem;
+        font-size: 0.95rem;
+        font-weight: 600;
         font-style: italic;
         color: var(--chocolate);
-        opacity: 0.75;
     }
     .match {
-        border: 1px solid rgba(58, 36, 32, 0.4);
-        background: transparent;
-        padding: 0.7rem 0.9rem;
+        border: 1px solid rgba(58, 36, 32, 0.45);
+        background: rgba(255, 253, 247, 0.3);
+        padding: 0.8rem 1rem;
         text-align: left;
         cursor: pointer;
         font-family: var(--body);
+        font-size: 1.1rem;
         display: grid;
         gap: 0.15rem;
         color: var(--ink-on-paper);
@@ -710,17 +723,18 @@
         background: rgba(58, 36, 32, 0.07);
     }
     .match b {
-        font-weight: 600;
+        font-weight: 700;
     }
     .match i {
-        font-size: 0.9rem;
-        opacity: 0.75;
+        font-size: 0.98rem;
+        font-weight: 500;
+        opacity: 0.85;
     }
     .party-box {
-        border: 1px solid rgba(58, 36, 32, 0.35);
+        border: 1px solid rgba(58, 36, 32, 0.4);
         padding: 1.1rem 1.15rem 1.25rem;
         display: grid;
-        gap: 1rem;
+        gap: 1.15rem;
     }
     .party-head {
         display: flex;
@@ -728,27 +742,38 @@
         align-items: baseline;
         gap: 0.8rem;
         flex-wrap: wrap;
-        font-size: 0.74rem;
-        letter-spacing: 0.26em;
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.15em;
         text-transform: uppercase;
-        color: var(--chocolate);
-        border-bottom: 1px solid rgba(58, 36, 32, 0.3);
+        color: var(--ink-label);
+        border-bottom: 1px solid rgba(58, 36, 32, 0.35);
         padding-bottom: 0.6rem;
     }
     .party-head i {
         font-style: italic;
+        font-weight: 600;
         text-transform: none;
         letter-spacing: 0.03em;
-        font-size: 0.95rem;
+        font-size: 1rem;
     }
     .guest-row {
         display: grid;
         grid-template-columns: 1fr auto;
-        gap: 0.55rem 0.8rem;
+        gap: 0.6rem 0.8rem;
         align-items: center;
     }
+    /* Each guest owns a name, two pills, a meal and a diet box — without a rule
+       between them the rows read as one long list of controls and it stops being
+       obvious which meal belongs to whom. */
+    .guest-row + .guest-row {
+        border-top: 1px solid rgba(58, 36, 32, 0.22);
+        padding-top: 1rem;
+    }
     .g-name {
-        font-size: 1.05rem;
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--ink-on-paper);
     }
 
     /* ── plus-one: kept quiet and off to the side until it's wanted ────────── */
@@ -758,14 +783,15 @@
     }
     .plus-add {
         background: none;
-        border: 1px dashed rgba(58, 36, 32, 0.35);
+        border: 1px dashed rgba(58, 36, 32, 0.5);
         color: var(--chocolate);
         font-family: var(--body);
-        font-size: 0.82rem;
+        font-size: 0.98rem;
+        font-weight: 600;
         letter-spacing: 0.04em;
-        padding: 0.3rem 0.7rem;
+        padding: 0.5rem 0.9rem;
         cursor: pointer;
-        opacity: 0.7;
+        opacity: 0.9;
         display: inline-flex;
         align-items: baseline;
         gap: 0.4rem;
@@ -779,45 +805,59 @@
         color: var(--claret);
     }
     .plus-add i {
-        font-size: 0.74rem;
-        opacity: 0.7;
+        font-size: 0.85rem;
+        font-weight: 500;
+        opacity: 0.8;
     }
     .guest-row.is-plus {
-        padding-top: 0.15rem;
-        border-top: 1px dotted rgba(58, 36, 32, 0.22);
+        border-top-style: dotted;
     }
     .plus-field {
         display: flex;
         align-items: center;
         gap: 0.4rem;
+        /* A name is a name however wide the card gets — left to fill the column it
+           dwarfs the named guests sitting above it. */
+        max-width: 24rem;
     }
     .plus-name {
         flex: 1;
         min-width: 0;
-        background: transparent;
+        background: rgba(255, 253, 247, 0.35);
         border: none;
-        border-bottom: 1px dashed rgba(58, 36, 32, 0.45);
+        border-bottom: 2px dashed rgba(58, 36, 32, 0.55);
         font-family: var(--body);
-        font-size: 1rem;
+        font-size: 1.1rem;
+        font-weight: 600;
         font-style: italic;
         color: var(--ink-on-paper);
-        padding: 0.15rem 0.05rem;
+        padding: 0.45rem 0.5rem;
     }
     .plus-name:focus {
         outline: none;
+        background: rgba(255, 253, 247, 0.75);
         border-bottom-color: var(--claret);
     }
+    /* Was a bare glyph that read as punctuation; given an outline and a real
+       target so it's recognisable as the way to give the seat back. */
     .plus-drop {
+        flex: none;
+        display: grid;
+        place-items: center;
+        width: 2.1rem;
+        height: 2.1rem;
         background: none;
-        border: none;
-        color: rgba(58, 36, 32, 0.5);
-        font-size: 1.15rem;
+        border: 1px solid rgba(58, 36, 32, 0.4);
+        color: var(--chocolate);
+        font-size: 1.25rem;
         line-height: 1;
         cursor: pointer;
-        padding: 0 0.2rem;
+        padding: 0;
     }
     .plus-drop:hover {
-        color: var(--claret);
+        color: var(--parchment);
+        background: var(--claret);
+        border-color: var(--claret);
     }
 
     .g-pills {
@@ -825,14 +865,17 @@
         gap: 0.45rem;
         justify-self: end;
     }
+    /* Accept/decline is the one decision every guest has to make, so the pills get
+       a real tap target and enough weight to be read at arm's length. */
     .pill {
-        border: 1px solid rgba(58, 36, 32, 0.4);
-        background: transparent;
+        border: 1px solid rgba(58, 36, 32, 0.5);
+        background: rgba(255, 253, 247, 0.3);
         font-family: var(--body);
-        font-size: 0.8rem;
+        font-size: 0.98rem;
+        font-weight: 600;
         letter-spacing: 0.06em;
         color: var(--ink-on-paper);
-        padding: 0.32rem 0.75rem;
+        padding: 0.55rem 1.1rem;
         cursor: pointer;
         transition:
             background 0.2s ease,
@@ -842,73 +885,102 @@
         background: var(--claret);
         color: var(--parchment);
         border-color: var(--claret);
+        font-weight: 700;
     }
-    .g-meal {
-        font-family: var(--body);
-        font-size: 0.9rem;
-        color: var(--ink-on-paper);
-        background: transparent;
-        border: 1px solid rgba(58, 36, 32, 0.4);
-        padding: 0.32rem 0.4rem;
-    }
+    /* With the meal picker gone the allergies box is the whole second line of a
+       guest's row, so let it run the full width rather than sit in one column. */
     .g-diet {
-        background: transparent;
+        grid-column: 1 / -1;
+        width: 100%;
+        background: rgba(255, 253, 247, 0.3);
         border: none;
-        border-bottom: 1px solid rgba(58, 36, 32, 0.3);
+        border-bottom: 2px solid rgba(58, 36, 32, 0.4);
         font-family: var(--body);
-        font-size: 0.9rem;
+        font-size: 1.05rem;
+        font-weight: 500;
         font-style: italic;
         color: var(--ink-on-paper);
-        padding: 0.2rem 0.05rem;
+        padding: 0.45rem 0.5rem;
     }
     .g-diet:focus {
         outline: none;
+        background: rgba(255, 253, 247, 0.75);
         border-bottom-color: var(--claret);
     }
     .g-diet::placeholder,
     .plus-name::placeholder {
-        color: rgba(58, 36, 32, 0.4);
+        color: rgba(58, 36, 32, 0.55);
     }
 
     /* ── mailing address ───────────────────────────────────────────────────── */
     .addr {
-        border: 1px solid rgba(58, 36, 32, 0.35);
+        border: 1px solid rgba(58, 36, 32, 0.4);
         padding: 0.4rem 1.15rem 1.25rem;
         margin: 0;
     }
     .addr legend {
-        font-size: 0.74rem;
-        letter-spacing: 0.26em;
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.15em;
         text-transform: uppercase;
-        color: var(--chocolate);
+        color: var(--ink-label);
         padding: 0 0.5rem;
     }
     .addr-why {
-        margin: 0 0 1rem;
-        font-size: 0.88rem;
+        margin: 0 0 1.1rem;
+        font-size: 0.98rem;
+        font-weight: 600;
         font-style: italic;
         color: var(--chocolate);
-        opacity: 0.75;
     }
     .addr-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 1rem 0.9rem;
+        gap: 1.15rem 0.9rem;
     }
     .addr-grid .span-2 {
         grid-column: 1 / -1;
     }
+    /* The card is wide enough on a desktop to lay the address out the way it's
+       actually written — city, state and ZIP on one line — instead of pairing ZIP
+       with country because two columns was all there was room for. */
+    @media (min-width: 700px) {
+        .addr-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        .addr-grid .span-country {
+            grid-column: 1 / -1;
+        }
+    }
     .opt {
-        letter-spacing: 0.12em;
-        opacity: 0.6;
+        font-weight: 500;
+        letter-spacing: 0.1em;
+        opacity: 0.75;
+    }
+    /* Two short one-line answers; side by side on a wide card, stacked on a phone. */
+    .tail-pair {
+        display: grid;
+        gap: 1.35rem;
+    }
+    @media (min-width: 700px) {
+        .tail-pair {
+            grid-template-columns: 1fr 1fr;
+            gap: 1.35rem 0.9rem;
+        }
     }
 
     @media (max-width: 560px) {
         .guest-row {
             grid-template-columns: 1fr;
         }
+        /* Stacked, the pills have the whole width — split it between them rather
+           than leaving two small targets huddled on the left. */
         .g-pills {
-            justify-self: start;
+            justify-self: stretch;
+        }
+        .g-pills .pill {
+            flex: 1;
+            padding: 0.7rem 0.5rem;
         }
         .addr-grid {
             grid-template-columns: 1fr;
@@ -926,8 +998,9 @@
     }
     .after-link {
         font-style: italic;
+        font-weight: 600;
         color: var(--chocolate);
-        font-size: 0.98rem;
+        font-size: 1.05rem;
     }
     @keyframes press {
         0% {

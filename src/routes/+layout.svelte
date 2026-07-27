@@ -2,11 +2,15 @@
 	import '@fontsource/bodoni-moda/400.css';
 	import '@fontsource/bodoni-moda/400-italic.css';
 	import '@fontsource/bodoni-moda/500.css';
+	import '@fontsource/bodoni-moda/500-italic.css';
 	import '@fontsource/cormorant-garamond/400.css';
 	import '@fontsource/cormorant-garamond/400-italic.css';
 	import '@fontsource/cormorant-garamond/500.css';
 	import '@fontsource/cormorant-garamond/600.css';
 	import '@fontsource/cormorant-garamond/600-italic.css';
+	// Cormorant is a delicate face; the RSVP card leans on 700 for its field labels
+	// and small caps so they stay legible without dropping the serif.
+	import '@fontsource/cormorant-garamond/700.css';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import displayFont from '@fontsource/bodoni-moda/files/bodoni-moda-latin-400-normal.woff2?url';

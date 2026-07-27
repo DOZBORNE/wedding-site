@@ -124,7 +124,7 @@
 <style>
 	.rsvp-scene {
 		position: relative;
-		max-width: 660px;
+		max-width: 860px;
 		margin: 0 auto;
 		min-height: 480px;
 		perspective: 1400px;
@@ -135,7 +135,9 @@
 		left: 50%;
 		top: 50%;
 		transform: translate(-50%, -50%);
-		width: min(540px, 94%);
+		/* The envelope stays a hair narrower than the card it opens into — it reads
+		   as an object on the table rather than a panel the width of the page. */
+		width: min(620px, 94%);
 		/*
 		 * Three measurements drive the whole envelope interior, so the seal and the
 		 * address can't be positioned into each other by accident:
@@ -149,7 +151,9 @@
 		 */
 		--flap: 52%;
 		--seal: clamp(46px, 12.5vw, 76px);
-		--hint: 1.75rem;
+		/* Grown with the caption — .seal-hint is bolder and a notch larger now, so
+		   the band it needs under the seal is taller too. */
+		--hint: 2rem;
 		aspect-ratio: 8 / 5;
 		transform-style: preserve-3d;
 		transition:
@@ -226,26 +230,30 @@
 	.env-names {
 		font-family: var(--display);
 		font-style: italic;
-		font-size: clamp(1rem, 4.2vw, 1.35rem);
-		line-height: 1.12;
+		font-weight: 500;
+		font-size: clamp(1.1rem, 4.6vw, 1.5rem);
+		line-height: 1.14;
 		color: var(--claret);
 		/* "The Vanderhoeven-Whitfield Family" has to wrap somewhere. */
 		overflow-wrap: break-word;
 		text-wrap: balance;
 	}
 	.env-to {
-		font-size: 0.62rem;
-		letter-spacing: 0.32em;
+		font-size: 0.7rem;
+		font-weight: 700;
+		letter-spacing: 0.24em;
 		text-transform: uppercase;
-		opacity: 0.65;
-		margin-bottom: 0.15rem;
+		color: var(--ink-label);
+		opacity: 0.8;
+		margin-bottom: 0.2rem;
 	}
 	.env-sub {
-		font-size: 0.68rem;
-		letter-spacing: 0.28em;
+		font-size: 0.76rem;
+		font-weight: 600;
+		letter-spacing: 0.2em;
 		text-transform: uppercase;
-		opacity: 0.75;
-		margin-top: 0.2rem;
+		opacity: 0.85;
+		margin-top: 0.3rem;
 		/* Secondary to the name — first thing to go when the band is tight. */
 		overflow-wrap: break-word;
 	}
@@ -290,11 +298,12 @@
 		transform: scale(1.05) rotate(-3deg);
 	}
 	.seal-hint {
-		font-size: 0.62rem;
-		letter-spacing: 0.3em;
-		text-indent: 0.3em;
+		font-size: 0.74rem;
+		font-weight: 700;
+		letter-spacing: 0.26em;
+		text-indent: 0.26em;
 		text-transform: uppercase;
-		color: var(--chocolate);
+		color: var(--ink-label);
 	}
 	.open .env-flap {
 		transform: rotateX(178deg);
@@ -315,7 +324,7 @@
 		top: 0;
 		transform: translateX(-50%) translateY(90px);
 		width: 100%;
-		max-width: 620px;
+		max-width: 820px;
 		opacity: 0;
 		visibility: hidden;
 		pointer-events: none;
