@@ -87,7 +87,7 @@
 		<div class="rsvp-scene" class:open bind:this={scene} use:reveal>
 			<div class="envelope" aria-hidden={open}>
 				<div class="env-body">
-					<div class="env-address">
+					<div class="env-address" class:for-party={!!party}>
 						{#if party}
 							<div class="env-to">For</div>
 							<div class="env-names">{party.display_name}</div>
@@ -108,7 +108,7 @@
 					aria-label={party ? `Open the invitation for ${party.display_name}` : 'Open the RSVP form'}
 					onclick={breakSeal}
 				>
-					<Seal size={76} />
+					<Seal size="var(--seal)" />
 					<span class="seal-hint">RSVP</span>
 				</button>
 			</div>
@@ -136,11 +136,57 @@
 		top: 50%;
 		transform: translate(-50%, -50%);
 		width: min(540px, 94%);
+		/*
+		 * Three measurements drive the whole envelope interior, so the seal and the
+		 * address can't be positioned into each other by accident:
+		 *   --flap  where the flap's V converges; the seal is centred on that point
+		 *   --seal  the wax seal's diameter
+		 *   --hint  the "RSVP" caption under the seal, plus its gap and padding
+		 * The address then starts below the seal's real bottom edge, computed rather
+		 * than eyeballed. It used to be pinned to `bottom: 8%`, which was fine for the
+		 * two-line generic case and collided with the seal as soon as a party name
+		 * added a third line — worst on a phone, where the envelope is shortest.
+		 */
+		--flap: 52%;
+		--seal: clamp(46px, 12.5vw, 76px);
+		--hint: 1.75rem;
 		aspect-ratio: 8 / 5;
 		transform-style: preserve-3d;
 		transition:
 			opacity 0.6s ease 0.45s,
 			transform 0.6s ease 0.45s;
+	}
+	/* A phone's envelope is barely 200px tall at 8/5 — nowhere near enough room under
+	   the seal for three lines. Give it back some height as the screen narrows. */
+	@media (max-width: 720px) {
+		.envelope {
+			aspect-ratio: 3 / 2;
+		}
+	}
+	@media (max-width: 520px) {
+		.envelope {
+			aspect-ratio: 6 / 5;
+		}
+	}
+	/* Below this a two-word household name wraps, and the wrapped line is what runs
+	   into the seal. Nearly square is unusual for an envelope but reads fine at phone
+	   width, and it's the only place the extra height can come from. */
+	@media (max-width: 400px) {
+		.envelope {
+			aspect-ratio: 9 / 8;
+		}
+	}
+	/*
+	 * On the very smallest phones a long household name wraps to two lines and even a
+	 * near-square envelope can't hold four lines clear of the seal. Drop the "from
+	 * Devin & Jessica" line, which is the one thing on this envelope the guest already
+	 * knows — the page they're standing on says it twice. Only on a party envelope:
+	 * the generic version needs its second line, which is the actual invitation.
+	 */
+	@media (max-width: 360px) {
+		.for-party .env-sub {
+			display: none;
+		}
 	}
 	.env-body {
 		position: absolute;
@@ -163,7 +209,16 @@
 		position: absolute;
 		left: 0;
 		right: 0;
-		bottom: 8%;
+		/* Starts where the seal ends — half the seal below the flap tip, plus the
+		   caption beneath it — so the two can never share vertical space. */
+		top: calc(var(--flap) + var(--seal) / 2 + var(--hint));
+		bottom: 4.5%;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		/* Long household names ran to the paper's edge; the envelope's inner rule sits
+		   at 9px, so keep the text well inside it. */
+		padding-inline: 9%;
 		text-align: center;
 		color: var(--chocolate);
 		z-index: 1;
@@ -171,8 +226,12 @@
 	.env-names {
 		font-family: var(--display);
 		font-style: italic;
-		font-size: 1.35rem;
+		font-size: clamp(1rem, 4.2vw, 1.35rem);
+		line-height: 1.12;
 		color: var(--claret);
+		/* "The Vanderhoeven-Whitfield Family" has to wrap somewhere. */
+		overflow-wrap: break-word;
+		text-wrap: balance;
 	}
 	.env-to {
 		font-size: 0.62rem;
@@ -187,13 +246,15 @@
 		text-transform: uppercase;
 		opacity: 0.75;
 		margin-top: 0.2rem;
+		/* Secondary to the name — first thing to go when the band is tight. */
+		overflow-wrap: break-word;
 	}
 	.env-flap {
 		position: absolute;
 		left: 0;
 		right: 0;
 		top: 0;
-		height: 58%;
+		height: var(--flap);
 		clip-path: polygon(0 0, 100% 0, 50% 100%);
 		background: linear-gradient(180deg, #decdb1, #c6b190 88%, #b9a382);
 		transform-origin: top center;
@@ -210,7 +271,7 @@
 	.seal-btn {
 		position: absolute;
 		left: 50%;
-		top: 58%;
+		top: var(--flap);
 		transform: translate(-50%, -50%);
 		z-index: 3;
 		background: none;

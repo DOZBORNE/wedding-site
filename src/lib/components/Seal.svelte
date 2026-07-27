@@ -3,19 +3,17 @@
 	// recessed stamp face and embossed monogram. Drawn as code, unique
 	// gradient ids per instance so several seals can share a page.
 	import { COUPLE } from '$lib/config';
-	let { size = 76 }: { size?: number } = $props();
+	// A number is taken as pixels; a string is passed through as a CSS length, so a
+	// caller can hand this a clamp() or a custom property and let the seal scale with
+	// its container. Sizing runs through CSS rather than width/height attributes so
+	// that stays possible — an attribute can only hold a fixed number.
+	let { size = 76 }: { size?: number | string } = $props();
+	const dim = $derived(typeof size === 'number' ? `${size}px` : size);
 	const uid = Math.random().toString(36).slice(2, 8);
 	const mono = `${COUPLE.monogram[0]}${COUPLE.monogram[1]}`;
 </script>
 
-<svg
-	class="seal"
-	width={size}
-	height={size}
-	viewBox="0 0 120 120"
-	aria-hidden="true"
-	style="--s:{size}px"
->
+<svg class="seal" viewBox="0 0 120 120" aria-hidden="true" style="--s:{dim}">
 	<defs>
 		<radialGradient id="wax-{uid}" cx="0.38" cy="0.3" r="0.85">
 			<stop offset="0" stop-color="#8A3540" />
@@ -113,6 +111,9 @@
 <style>
 	.seal {
 		display: block;
+		width: var(--s);
+		height: var(--s);
+		flex: none;
 		filter: drop-shadow(0 calc(var(--s) / 12) calc(var(--s) / 5) rgba(0, 0, 0, 0.5));
 		user-select: none;
 	}
