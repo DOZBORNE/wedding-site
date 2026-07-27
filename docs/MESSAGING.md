@@ -84,14 +84,19 @@ Optional cron: `POST /api/reminders` with `Authorization: Bearer $CRON_SECRET`.
 4. `RESEND_FROM="Devin & Jessica <rsvp@yourdomain.com>"` (must be on the verified domain).
 5. **Make that From address receive mail.** Resend only needs `send.<domain>` to send, but a
    domain that sends and cannot receive looks like throwaway spam infrastructure, and guests
-   are told to "just reply to this email". Add a free forwarder (improvmx.com works with any
-   DNS host — Cloudflare Email Routing needs the domain's DNS to be on Cloudflare, and ours
-   is on Vercel) and point MX at it:
+   are told to "just reply to this email". We use improvmx.com (free); Cloudflare Email
+   Routing is an equally good option since the zone is on Cloudflare already. Point MX at it:
    ```
    rsvp.yourdomain.com.  MX  10  mx1.improvmx.com.
    rsvp.yourdomain.com.  MX  20  mx2.improvmx.com.
    ```
-   This does not disturb sending — that runs through the separate `send.rsvp.yourdomain.com`.
+   Also add ImprovMX's SPF at **`rsvp`**, never at `@` — the zone root carries its own
+   `v=spf1 -all` and two SPF records on one name is a PERMERROR, i.e. worse than none:
+   ```
+   rsvp.yourdomain.com.  TXT  "v=spf1 include:spf.improvmx.com ~all"
+   ```
+   This does not disturb sending — that runs through the separate `send.rsvp.yourdomain.com`,
+   which is the envelope domain SPF is actually checked against.
    We send **no Reply-To header** on purpose: a Reply-To on a different organisational domain
    than the From is a classic phishing pattern and was costing us the inbox. Replies are
    routed with MX instead. Send yourself an invite and reply to it before any bulk send.
