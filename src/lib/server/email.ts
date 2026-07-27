@@ -84,14 +84,16 @@ async function send(to: string, subject: string, html: string): Promise<string |
 
 	for (let attempt = 0; ; attempt++) {
 		await pace();
+		// No replyTo: replies go to RESEND_FROM, which forwards to a real inbox. A
+		// Reply-To on a different organisational domain than the From is a phishing
+		// tell that spam filters score against us, and it was landing invitations in
+		// spam. Keep the two domains identical — route replies with MX, not a header.
 		const { data, error } = await r.emails.send({
 			from: env.RESEND_FROM,
 			to,
 			subject,
 			html,
-			text: htmlToText(html), // plain-text alternative — better deliverability
-			// Guest replies route here (any inbox; need not be on the verified domain).
-			...(env.RESEND_REPLY_TO ? { replyTo: env.RESEND_REPLY_TO } : {})
+			text: htmlToText(html) // plain-text alternative — better deliverability
 		});
 		if (!error) return data?.id ?? '';
 		// Being throttled isn't a rejection — wait out the window and try again.

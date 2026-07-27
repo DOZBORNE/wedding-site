@@ -77,6 +77,19 @@ Optional cron: `POST /api/reminders` with `Authorization: Bearer $CRON_SECRET`.
 2. Domains → Add Domain → add the DKIM/SPF (and DMARC) DNS records it shows.
 3. API Keys → create → `RESEND_API_KEY=re_...`.
 4. `RESEND_FROM="Devin & Jessica <rsvp@yourdomain.com>"` (must be on the verified domain).
+5. **Make that From address receive mail.** Resend only needs `send.<domain>` to send, but a
+   domain that sends and cannot receive looks like throwaway spam infrastructure, and guests
+   are told to "just reply to this email". Add a free forwarder (improvmx.com works with any
+   DNS host — Cloudflare Email Routing needs the domain's DNS to be on Cloudflare, and ours
+   is on Vercel) and point MX at it:
+   ```
+   rsvp.yourdomain.com.  MX  10  mx1.improvmx.com.
+   rsvp.yourdomain.com.  MX  20  mx2.improvmx.com.
+   ```
+   This does not disturb sending — that runs through the separate `send.rsvp.yourdomain.com`.
+   We send **no Reply-To header** on purpose: a Reply-To on a different organisational domain
+   than the From is a classic phishing pattern and was costing us the inbox. Replies are
+   routed with MX instead. Send yourself an invite and reply to it before any bulk send.
 
 ### Twilio (SMS) — start early, approval takes days
 1. Sign up, upgrade from trial (add a card).
