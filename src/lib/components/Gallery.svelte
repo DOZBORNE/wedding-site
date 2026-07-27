@@ -115,7 +115,7 @@
             eyebrow="Gallery"
             title="The two of us"
             seed={12}
-            lede="There's more words in pictures! Here's our wall of life for the past year!"
+            lede="Some sweet moments of life together!"
         />
         <div class="gallery-grid" bind:this={gridEl}>
             {#each GALLERY as photo, i (i)}
