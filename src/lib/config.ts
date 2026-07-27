@@ -56,8 +56,12 @@ export const CHAPTERS: StoryChapter[] = [
   {
     numeral: "Chapter I",
     title: "The Meeting",
-    // TODO: replace with the real story, in your own words
-    body: "In the beginning there were two people from two different worlds — and, as beginnings often do, theirs arrived disguised as an ordinary church ice skating night. Not long after, Devin asked Jess to coffee, where the sparks caught and never quite went out. He noticed her big smile first, then her even bigger heart, and a laugh that rings with more joy than Christmas morning. She noticed his curly hair, his remarkable mind, the laugh that makes her smile before she can help it, his gentle heart and spirit, and his plain determination to win her hand. From coffee shops to long walks in the park, they kept finding reasons for one more hour together.",
+    // paragraphs are split on the blank lines when rendered
+    body: [
+      "In the beginning, there were two people from two different worlds—and, as beginnings often do, theirs arrived disguised as an ordinary church ice-skating event.",
+      "Not long after, Devin asked Jess out for coffee, where the sparks caught and never quite went out. He noticed her big smile first, then her even bigger heart, and a laugh that rang with more joy than Christmas morning. She noticed his cute, curly hair, his remarkable mind, the laugh that made her smile before she could help it, his gentle heart and spirit, and his steadfast determination to win her hand.",
+      "From coffee shops to long walks in the park, they kept finding reasons for just one more hour together.",
+    ].join("\n\n"),
     plates: [
       {
         src: "/photos/jess_at_pizza_grace.jpg",
@@ -75,7 +79,7 @@ export const CHAPTERS: StoryChapter[] = [
   {
     numeral: "Chapter II",
     title: "The Inbetween",
-    body: "The middle chapters are the best ones; this is when love grew its roots. From trips to the mountains, ordinary evenings, Birmingham explored street by street, to a hundred small discoveries about the person across the table; they became the best of friends, and tasted the particular sweetness of being fully known, fully loved, and still chosen.",
+    body: "The middle chapters are the best ones; this is where love grew its roots. From trips to the mountains and ordinary evenings to exploring Birmingham street by street and discovering a hundred small things about the person across the table, they became the best of friends and tasted the particular sweetness of being fully known, fully loved, and still chosen.",
     plates: [
       {
         src: "/photos/dev_jess_june.jpg",
@@ -97,7 +101,11 @@ export const CHAPTERS: StoryChapter[] = [
   {
     numeral: "Chapter III",
     title: "The Question",
-    body: "Devin had long since set his mind on marrying Jess. So he made a plan — and carried it, nervous and hopeful, into the woods beside a trickling creek, where he knelt and asked the most important question of his life. He asked Jess the most important question of his life, and she wholeheartedly said yes! From thenceforth, they couldn’t be more eager to start planning for their futures together. Looking back across every page, they've come to see the Lord's goodness written through all of it — the way He drew two very different worlds together — and they couldn’t be more grateful. What they hope to build now is a life that is honorable, loving, sacrificial, and that gives Jesus all the glory.",
+    body: [
+      "Devin had long since set his mind on marrying Jess. So he made a plan—and carried it, nervous and hopeful, into the woods beside a trickling creek, where he knelt and asked the most important question of his life. She wholeheartedly said yes!",
+      "From that day forward, they couldn’t have been more eager to begin planning their future together.",
+      "Looking back across every page, they’ve come to see the Lord’s goodness written through it all—the way He drew two very different worlds together—and they couldn’t be more grateful. What they hope to build now is a life that is honorable, loving, sacrificial, and one that gives Jesus all the glory.",
+    ].join("\n\n"),
     plates: [
       { src: "/photos/proposal.jpg", caption: "the proposal", tone: "candle" },
       {
@@ -151,6 +159,42 @@ export const GALLERY = [
     src: "/photos/dev_jess_sunset.jpg",
     caption: "explorin! wadi rum",
     tone: "olive",
+    tall: false,
+  },
+  {
+    src: "/photos/citadel.jpg",
+    caption: "visiting the temple of Hercules",
+    tone: "candle",
+    tall: true,
+  },
+  {
+    src: "/photos/danis_wedding.jpg",
+    caption: "watching friends get married",
+    tone: "mauve",
+    tall: false,
+  },
+  {
+    src: "/photos/seeds_coffee.jpg",
+    caption: "we love a good coffee date",
+    tone: "blush",
+    tall: true,
+  },
+  {
+    src: "/photos/downtown_jordan.jpg",
+    caption: "enjoying the Jordanian night life",
+    tone: "olive",
+    tall: false,
+  },
+  {
+    src: "/photos/petra.jpg",
+    caption: "explorin Petra, the ancient city",
+    tone: "candle",
+    tall: true,
+  },
+  {
+    src: "/photos/church.jpg",
+    caption: "shoutout to our church, Iron City, for bringing us together!",
+    tone: "mauve",
     tall: false,
   },
 ];

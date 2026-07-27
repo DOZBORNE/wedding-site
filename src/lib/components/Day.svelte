@@ -40,7 +40,7 @@
                     <div class="time">{WEDDING.receptionTime}</div>
                     <h3>The Reception</h3>
                     <p>
-                        Dinner, dancing, dabke &amp; candlelight<br />under the
+                        Dinner, dancing, Dabke &amp; candlelight<br />under the
                         pavilion
                     </p>
                 </div>

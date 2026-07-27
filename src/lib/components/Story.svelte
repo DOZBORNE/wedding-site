@@ -9,6 +9,10 @@
 	// when that plate has its own body, otherwise the chapter body stays put
 	let activeIndex = $state<number[]>(CHAPTERS.map(() => 0));
 
+	// the copy showing for a chapter right now, and its blank-line paragraphs
+	const copyFor = (c: (typeof CHAPTERS)[number], i: number) => c.plates[i]?.body || c.body;
+	const parasFor = (c: (typeof CHAPTERS)[number], i: number) => copyFor(c, i).split('\n\n');
+
 	// Each chapter is a tall scroll region with its content pinned (sticky)
 	// inside: the page keeps scrolling but the chapter holds still while the
 	// reader's scroll pages through its photos — then it releases.
@@ -85,10 +89,14 @@
 						<div class="story-copy">
 							<div class="ch-num">{chapter.numeral}</div>
 							<h3>{chapter.title}</h3>
-							{#key chapter.plates[activeIndex[i]]?.body || chapter.body}
-								<p class="drop" in:fade={{ duration: 400 }}>
-									{chapter.plates[activeIndex[i]]?.body || chapter.body}
-								</p>
+							{#key copyFor(chapter, activeIndex[i])}
+								<div class="ch-body" in:fade={{ duration: 400 }}>
+									<!-- blank lines in the copy are real paragraph
+									     breaks; only the first wears the drop cap -->
+									{#each parasFor(chapter, activeIndex[i]) as para, p (p)}
+										<p class:drop={p === 0}>{para}</p>
+									{/each}
+								</div>
 							{/key}
 						</div>
 					</div>
@@ -250,6 +258,10 @@
 	h3 {
 		font-size: clamp(1.7rem, 3.5vw, 2.4rem);
 		color: var(--parchment);
+	}
+	.ch-body {
+		display: grid;
+		gap: 0.9rem;
 	}
 	p {
 		max-width: 56ch;

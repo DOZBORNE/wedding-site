@@ -205,8 +205,16 @@ export function flankIvy(
 	return observed(el, grow);
 }
 
-/** Ivy creeping up the left edge and over the shoulder of a frame. */
-export function cornerIvy(el: HTMLElement, opts: { seed?: number } = {}) {
+/**
+ * Ivy creeping up one edge of a frame. `side` mirrors it onto the right
+ * edge, and `sprig: true` grows the short version that stops around
+ * mid-frame instead of wrapping the shoulder — between them a wall of
+ * frames can be vined without every vine reading the same.
+ */
+export function cornerIvy(
+	el: HTMLElement,
+	opts: { seed?: number; side?: 'left' | 'right'; sprig?: boolean } = {}
+) {
 	const seed = opts.seed ?? 40;
 	const svg = makeOverlay(el);
 	const grow = (animate: boolean): boolean => {
@@ -216,14 +224,13 @@ export function cornerIvy(el: HTMLElement, opts: { seed?: number } = {}) {
 			if (!w || !h) return false;
 			clearSvg(svg);
 			svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-			drawVine(
-				svg,
-				`M 8 ${h + 6} C -8 ${h * 0.72} 20 ${h * 0.58} 6 ${h * 0.42} C -4 ${h * 0.28} 4 ${h * 0.18} ${w * 0.12} ${h * 0.06} C ${w * 0.2} -4 ${w * 0.34} -2 ${w * 0.42} ${h * 0.04}`,
-				seed,
-				13,
-				0.85,
-				animate
-			);
+			// every x is written for the left edge, then folded across the
+			// frame when the vine belongs on the right
+			const x = (v: number) => (opts.side === 'right' ? w - v : v);
+			const d = opts.sprig
+				? `M ${x(10)} ${h + 6} C ${x(-6)} ${h * 0.84} ${x(24)} ${h * 0.74} ${x(8)} ${h * 0.6} C ${x(-2)} ${h * 0.5} ${x(w * 0.09)} ${h * 0.47} ${x(w * 0.17)} ${h * 0.41}`
+				: `M ${x(8)} ${h + 6} C ${x(-8)} ${h * 0.72} ${x(20)} ${h * 0.58} ${x(6)} ${h * 0.42} C ${x(-4)} ${h * 0.28} ${x(4)} ${h * 0.18} ${x(w * 0.12)} ${h * 0.06} C ${x(w * 0.2)} -4 ${x(w * 0.34)} -2 ${x(w * 0.42)} ${h * 0.04}`;
+			drawVine(svg, d, seed, 13, 0.85, animate);
 			return true;
 		} catch {
 			return true;

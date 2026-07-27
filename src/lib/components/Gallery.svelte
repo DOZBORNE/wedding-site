@@ -4,39 +4,51 @@
     import SectionHead from "./SectionHead.svelte";
 
     let flipped = $state(GALLERY.map(() => false));
-    let gridEl = $state<HTMLDivElement>();
     let lightbox = $state<number | null>(null);
     let dialog = $state<HTMLDialogElement>();
 
-    // deal the cards: flip face-up one by one when the wall scrolls into view
-    $effect(() => {
-        if (!gridEl) return;
+    // which frames get a vine, and how — deliberately scattered across both
+    // edges rather than running down one column, so the ivy looks like it
+    // found the wall on its own
+    const IVY: Record<number, { side: "left" | "right"; sprig?: boolean }> = {
+        1: { side: "left" },
+        3: { side: "left", sprig: true },
+        5: { side: "right", sprig: true },
+        8: { side: "right" },
+        10: { side: "left", sprig: true },
+    };
+    function galleryIvy(el: HTMLElement, i: number) {
+        const spec = IVY[i];
+        if (!spec) return;
+        return cornerIvy(el, { seed: 60 + i * 7, ...spec });
+    }
+
+    // deal the cards: each turns face-up as it reaches the viewport, staggered
+    // across its row so a row lands like a dealt hand however long the wall is
+    function deal(el: HTMLElement, i: number) {
         const reduced = window.matchMedia(
             "(prefers-reduced-motion: reduce)",
         ).matches;
-        let timers: ReturnType<typeof setTimeout>[] = [];
+        let timer: ReturnType<typeof setTimeout>;
         const io = new IntersectionObserver(
             (entries) => {
-                if (entries.some((e) => e.isIntersecting)) {
-                    io.disconnect();
-                    GALLERY.forEach((_, i) => {
-                        timers.push(
-                            setTimeout(
-                                () => (flipped[i] = true),
-                                reduced ? 0 : 250 + i * 170,
-                            ),
-                        );
-                    });
-                }
+                if (!entries.some((e) => e.isIntersecting)) return;
+                io.disconnect();
+                timer = setTimeout(
+                    () => (flipped[i] = true),
+                    reduced ? 0 : 250 + (i % 3) * 170,
+                );
             },
-            { threshold: 0.2 },
+            { threshold: 0.25 },
         );
-        io.observe(gridEl);
-        return () => {
-            io.disconnect();
-            timers.forEach(clearTimeout);
+        io.observe(el);
+        return {
+            destroy() {
+                clearTimeout(timer);
+                io.disconnect();
+            },
         };
-    });
+    }
 
     function tap(i: number) {
         if (flipped[i] && GALLERY[i].src) {
@@ -117,27 +129,19 @@
             seed={12}
             lede="Some sweet moments of life together!"
         />
-        <div class="gallery-grid" bind:this={gridEl}>
+        <div class="gallery-grid">
             {#each GALLERY as photo, i (i)}
-                {#if i % 3 === 1}
-                    <figure
-                        class="g-frame arch"
-                        class:tall={photo.tall}
-                        use:cornerIvy={{ seed: 60 + i }}
-                    >
-                        {@render cardInner(i)}
-                        <figcaption class="g-caption">
-                            <i>{photo.caption}</i>
-                        </figcaption>
-                    </figure>
-                {:else}
-                    <figure class="g-frame arch" class:tall={photo.tall}>
-                        {@render cardInner(i)}
-                        <figcaption class="g-caption">
-                            <i>{photo.caption}</i>
-                        </figcaption>
-                    </figure>
-                {/if}
+                <figure
+                    class="g-frame arch"
+                    class:tall={photo.tall}
+                    use:deal={i}
+                    use:galleryIvy={i}
+                >
+                    {@render cardInner(i)}
+                    <figcaption class="g-caption">
+                        <i>{photo.caption}</i>
+                    </figcaption>
+                </figure>
             {/each}
         </div>
     </div>
@@ -164,7 +168,7 @@
     }
     .g-frame {
         position: relative;
-        margin: 0 0 2rem;
+        margin: 0 0 3.2rem;
         border: 1px solid rgba(230, 217, 198, 0.28);
         outline: 1px solid rgba(230, 217, 198, 0.09);
         outline-offset: 5px;
@@ -172,10 +176,10 @@
         aspect-ratio: 3 / 3.9;
     }
     .g-frame:nth-child(3n + 2) {
-        margin-bottom: 4rem;
+        margin-bottom: 5.2rem;
     }
     .g-frame:nth-child(3n) {
-        margin-bottom: 3rem;
+        margin-bottom: 4.2rem;
     }
     .g-frame.tall {
         aspect-ratio: 3 / 4.4;
@@ -275,9 +279,11 @@
         text-transform: uppercase;
         color: rgba(230, 217, 198, 0.55);
     }
+    /* anchored to the frame's underside so a caption that runs to two lines
+	   grows downward into the gutter instead of up over the photo */
     .g-caption {
         position: absolute;
-        bottom: -1.9rem;
+        top: calc(100% + 0.55rem);
         left: 0;
         right: 0;
         text-align: center;

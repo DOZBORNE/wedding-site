@@ -10,6 +10,7 @@
 	import Guestbook from '$lib/components/Guestbook.svelte';
 	import Faq from '$lib/components/Faq.svelte';
 	import Registry from '$lib/components/Registry.svelte';
+	import Closing from '$lib/components/Closing.svelte';
 
 	let { data } = $props();
 </script>
@@ -25,3 +26,4 @@
 <Guestbook entries={data.guestbook} />
 <Faq />
 <Registry />
+<Closing />
