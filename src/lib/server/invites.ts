@@ -37,11 +37,17 @@ export async function sendInvitations(opts: {
 		? new Set<string>()
 		: await alreadyInvited((parties ?? []).map((p) => p.id as string));
 
+	const smsOn = opts.includeSms && smsEnabled();
+
 	let emails = 0;
 	let texts = 0;
 	let failed = 0;
 	let skipped = 0;
 	let sampleError = '';
+	// Parties this run can't reach at all — no email, and no phone we're able to
+	// text. They're not failures and not successes; without counting them they'd
+	// just vanish from the tally and look invited.
+	const unreachable: string[] = [];
 
 	const note = (e: unknown, fallback: string) => {
 		failed++;
@@ -61,6 +67,18 @@ export async function sendInvitations(opts: {
 			!sentBefore.has(`${party.id}|${channel}|${to.toLowerCase()}`);
 
 		const emailTargets = dedupeRecipients([party.contact_email, ...guests.map((g) => g.email)]);
+		const phoneTargets = smsOn
+			? dedupeRecipients([party.contact_phone, ...guests.map((g) => g.phone)])
+			: [];
+
+		// Nothing to send to. Say so rather than looping over two empty lists and
+		// reporting the party as handled — a phone-only household with texts turned
+		// off would otherwise pass through in total silence.
+		if (!emailTargets.length && !phoneTargets.length) {
+			unreachable.push(party.display_name as string);
+			continue;
+		}
+
 		for (const to of emailTargets) {
 			if (!fresh('email', to)) {
 				skipped++;
@@ -84,12 +102,31 @@ export async function sendInvitations(opts: {
 				// keep going — one bad address shouldn't stop the batch — but remember why.
 				partyFailed++;
 				note(e, 'Email failed to send.');
+				await logMessage({
+					party_id: party.id,
+					channel: 'email',
+					kind: 'invite',
+					to_address: to,
+					status: 'failed',
+					body: e instanceof Error ? e.message : 'Email failed to send.'
+				});
 			}
 		}
 
-		if (opts.includeSms && smsEnabled()) {
-			const body = `You're invited! ${COUPLE.first} & ${COUPLE.partnerFirst} are getting married ${WEDDING.dateLabel} at ${VENUE.name}. Please RSVP: ${url} (Reply STOP to opt out)`;
-			const phoneTargets = dedupeRecipients([party.contact_phone, ...guests.map((g) => g.phone)]);
+		if (phoneTargets.length) {
+			// Keep this body plain ASCII, and keep it short. Two separate traps:
+			//
+			// 1. Anything outside the GSM-7 alphabet — an em dash, a curly apostrophe,
+			//    an ellipsis, an emoji — silently re-encodes the *whole* message as
+			//    UCS-2, which cuts the per-segment budget from 160 characters to 70.
+			//    One decorative character can triple the segment count.
+			// 2. At 160 GSM-7 characters it splits into two segments. With the site's
+			//    URL and a ~6-char code that leaves very little slack, so a longer
+			//    domain or a wordier greeting tips it over.
+			//
+			// Neither shows up anywhere but the Twilio bill, so check both before
+			// editing. Nothing breaks if it does split — it just costs double.
+			const body = `You're invited! ${COUPLE.first} & ${COUPLE.partnerFirst} are getting married ${WEDDING.dateLabel} at ${VENUE.name}. RSVP: ${url} (Reply STOP to opt out)`;
 			for (const to of phoneTargets) {
 				if (!fresh('sms', to)) {
 					skipped++;
@@ -110,8 +147,20 @@ export async function sendInvitations(opts: {
 							body
 						});
 					}
-				} catch {
+				} catch (e) {
+					// Same treatment as a bounced email: counted, reported, and it
+					// holds back the `invited_at` stamp so the next run retries this
+					// number instead of writing it off as delivered.
 					partyFailed++;
+					note(e, 'Text failed to send.');
+					await logMessage({
+						party_id: party.id,
+						channel: 'sms',
+						kind: 'invite',
+						to_address: to,
+						status: 'failed',
+						body: e instanceof Error ? e.message : 'Text failed to send.'
+					});
 				}
 			}
 		}
@@ -135,5 +184,15 @@ export async function sendInvitations(opts: {
 		}
 	}
 
-	return { parties: parties?.length ?? 0, emails, texts, failed, skipped, error: sampleError };
+	return {
+		parties: (parties?.length ?? 0) - unreachable.length,
+		emails,
+		texts,
+		failed,
+		skipped,
+		unreachable: unreachable.length,
+		// A few names are enough to go fix the list; the full set would swamp the panel.
+		unreachableNames: unreachable.slice(0, 5),
+		error: sampleError
+	};
 }

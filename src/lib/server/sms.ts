@@ -14,7 +14,14 @@ function normalize(phone: string): string {
 
 /**
  * Plain fetch to the Twilio REST API — no SDK needed for one endpoint.
- * Returns the Twilio message SID on success (may be ''), or null if not sent.
+ * Returns the Twilio message SID on success (may be ''), or null when SMS is
+ * switched off / there's no number to text.
+ *
+ * A rejected send **throws**. It used to return null, which read to every caller
+ * as "nothing to do here" — so a text Twilio refused (unverified number, bad
+ * recipient, out of credit) was counted as a non-event: not tallied as a failure,
+ * not logged, and no obstacle to stamping the party invited. The batch would then
+ * skip that party forever. Failing loudly is what keeps a phone-first send honest.
  */
 export async function sendSms(to: string, body: string): Promise<string | null> {
 	if (!smsEnabled() || !to) return null;
@@ -31,7 +38,18 @@ export async function sendSms(to: string, body: string): Promise<string | null> 
 			Body: body
 		})
 	});
-	if (!res.ok) return null;
-	const data = (await res.json().catch(() => ({}))) as { sid?: string };
+
+	const data = (await res.json().catch(() => ({}))) as {
+		sid?: string;
+		message?: string;
+		code?: number;
+	};
+
+	if (!res.ok) {
+		// Twilio's own wording is the useful part — "The 'To' number is unverified",
+		// "Account not active" — so carry it up to the admin panel verbatim.
+		const detail = data.message || `Twilio returned ${res.status}.`;
+		throw new Error(data.code ? `${detail} (Twilio ${data.code})` : detail);
+	}
 	return data.sid ?? '';
 }

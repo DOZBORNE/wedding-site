@@ -29,6 +29,12 @@ export async function sendAllReminders(opts: { includeSms: boolean; force?: bool
 	let emails = 0;
 	let texts = 0;
 	let skipped = 0;
+	let failed = 0;
+	let sampleError = '';
+	const note = (e: unknown, fallback: string) => {
+		failed++;
+		if (!sampleError) sampleError = e instanceof Error ? e.message : fallback;
+	};
 
 	for (const party of parties ?? []) {
 		if (!opts.force && party.reminded_at && new Date(party.reminded_at).getTime() > cutoff) {
@@ -52,13 +58,17 @@ export async function sendAllReminders(opts: { includeSms: boolean; force?: bool
 						provider_id: id
 					});
 				}
-			} catch {
-				/* keep going — one bad address shouldn't stop the batch */
+			} catch (e) {
+				/* keep going — one bad address shouldn't stop the batch — but count it */
+				note(e, 'Reminder email failed to send.');
 			}
 		}
 
 		if (opts.includeSms && smsEnabled()) {
-			const body = `${COUPLE.first} & ${COUPLE.partnerFirst} are getting married ${WEDDING.dateLabel} at ${VENUE.name} — please RSVP: ${url} (Reply STOP to opt out)`;
+			// Plain ASCII only — see the note on the invite body in ./invites.ts. The
+			// em dash that used to sit before "please" pushed this whole message into
+			// UCS-2 and billed it as three segments instead of one.
+			const body = `${COUPLE.first} & ${COUPLE.partnerFirst} are getting married ${WEDDING.dateLabel} at ${VENUE.name} - please RSVP: ${url} (Reply STOP to opt out)`;
 			const phoneTargets = dedupeRecipients([party.contact_phone, ...guests.map((g) => g.phone)]);
 			for (const to of phoneTargets) {
 				try {
@@ -74,8 +84,17 @@ export async function sendAllReminders(opts: { includeSms: boolean; force?: bool
 							body
 						});
 					}
-				} catch {
-					/* same */
+				} catch (e) {
+					/* same — a refused text is reported, not silently dropped */
+					note(e, 'Reminder text failed to send.');
+					await logMessage({
+						party_id: party.id,
+						channel: 'sms',
+						kind: 'reminder',
+						to_address: to,
+						status: 'failed',
+						body: e instanceof Error ? e.message : 'Reminder text failed to send.'
+					});
 				}
 			}
 		}
@@ -86,5 +105,12 @@ export async function sendAllReminders(opts: { includeSms: boolean; force?: bool
 			.eq('id', party.id);
 	}
 
-	return { parties: (parties?.length ?? 0) - skipped, emails, texts, skipped };
+	return {
+		parties: (parties?.length ?? 0) - skipped,
+		emails,
+		texts,
+		skipped,
+		failed,
+		error: sampleError
+	};
 }

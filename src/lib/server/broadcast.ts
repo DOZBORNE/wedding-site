@@ -43,6 +43,12 @@ export async function sendBroadcast(opts: {
 	let emails = 0;
 	let texts = 0;
 	let recipients = 0;
+	let failed = 0;
+	let sampleError = '';
+	const note = (e: unknown, fallback: string) => {
+		failed++;
+		if (!sampleError) sampleError = e instanceof Error ? e.message : fallback;
+	};
 
 	for (const party of parties ?? []) {
 		const guests = (party.wed_guests as Guest[]) ?? [];
@@ -69,13 +75,18 @@ export async function sendBroadcast(opts: {
 							body: subject
 						});
 					}
-				} catch {
+				} catch (e) {
 					/* keep going */
+					note(e, 'Update email failed to send.');
 				}
 			}
 		}
 
 		if (wantSms) {
+			// Typed by the couple, so the GSM-7 rule that governs the fixed invite and
+			// reminder bodies can't be enforced here — a smart quote pasted in from a
+			// word processor will quietly double the segment count. Harmless, just
+			// pricier, and long updates are multi-segment regardless.
 			const smsBody = `${subject}\n\n${message}\n\n${url} (Reply STOP to opt out)`.slice(0, 1000);
 			const phoneTargets = dedupeRecipients([party.contact_phone, ...guests.map((g) => g.phone)]);
 			for (const to of phoneTargets) {
@@ -92,12 +103,21 @@ export async function sendBroadcast(opts: {
 							body: subject
 						});
 					}
-				} catch {
+				} catch (e) {
 					/* keep going */
+					note(e, 'Update text failed to send.');
+					await logMessage({
+						party_id: party.id,
+						channel: 'sms',
+						kind: 'update',
+						to_address: to,
+						status: 'failed',
+						body: e instanceof Error ? e.message : 'Update text failed to send.'
+					});
 				}
 			}
 		}
 	}
 
-	return { recipients, emails, texts };
+	return { recipients, emails, texts, failed, error: sampleError };
 }

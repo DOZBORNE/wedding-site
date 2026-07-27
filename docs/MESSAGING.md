@@ -12,7 +12,9 @@ No Evite/third-party — you own the data. This doc is the operational reference
   `first_name`/`last_name`/`email`/`phone`), `attending`, `meal`, `dietary`. A guest
   with `is_plus_one` can name themselves on the RSVP.
 - **`wed_messages`** = a log of every email/text sent (channel, kind, recipient,
-  provider id). Powers idempotent reminders and a record of what went out.
+  provider id). Powers idempotent reminders and a record of what went out. Refused sends
+  are logged with `status='failed'` and Twilio's/Resend's own error text in `body`; only
+  `status='sent'` rows suppress a re-send, so a failure always gets retried.
 
 RSVP state is **shared across the whole party**: anyone in the family opens the same
 card, sees everyone's answers, and can edit until the deadline.
@@ -52,6 +54,13 @@ Password from `ADMIN_PASSWORD`. You can:
   is skipped, so re-running after a batch that died halfway only catches the stragglers.
   "Everyone — re-send" ignores both, on purpose. Sends are paced under Resend's 2/second
   limit and retry once when throttled.
+
+  Before you press send, the panel shows **who this run can actually reach** — "Reaches 38
+  of 42 parties — 31 by email, 24 by text" — and flags the two ways a party falls out:
+  a phone number but no email with texts switched off, and no contact of any kind. Those
+  parties are skipped explicitly, named in the result, and left "not invited"; they used to
+  pass through the batch in silence and count as handled. The party list marks them too
+  (`no phone`, `no contact` chips).
 - **Send reminders** — emails/texts every party that hasn't responded (skips anyone
   reminded in the last 48h). Reaches household + per-guest contacts.
 - **Send an update** — broadcast a message (venue change, booking, schedule) to a chosen
@@ -75,8 +84,13 @@ Optional cron: `POST /api/reminders` with `Authorization: Bearer $CRON_SECRET`.
 3. Messaging → Regulatory Compliance → **Toll-Free Verification**. Use case: personal
    wedding RSVP notifications to invited guests; include a sample message with the RSVP
    link and "Reply STOP to opt out"; volume = lowest tier. Approval ~3–14 business days.
-4. Set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER=+1888…` (E.164).
+4. Set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER=+1888…` (E.164) —
+   in `.env` *and* in Vercel. Empty values mean `smsEnabled()` is false, the "also send
+   texts" checkbox never renders, and phone-only parties are reported as unreachable.
    Twilio auto-handles STOP/HELP for toll-free.
+5. Send yourself a test first — add a party with just your own number and invite it. A
+   number Twilio refuses (unverified sender, trial account, no credit) now surfaces the
+   error in the panel rather than silently counting as delivered.
 
 ### Every env var → also add in Vercel
 Set `PUBLIC_SITE_URL` to the real domain or reminder/deep links break. It has to keep the

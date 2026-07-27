@@ -5,7 +5,7 @@
 	import { MEALS } from '$lib/config';
 	import ConfirmButton from './ConfirmButton.svelte';
 	import PartyEditor from './PartyEditor.svelte';
-	import { blankParty, formatAddress, type PartyDraft } from './party-form';
+	import { blankParty, formatAddress, type AdminPartyView, type PartyDraft } from './party-form';
 
 	let { data } = $props();
 
@@ -144,16 +144,61 @@
 		texts: number;
 		failed: number;
 		skipped: number;
+		unreachable: number;
+		unreachableNames: string[];
 		error: string;
 	};
-	type RemindResult = { parties: number; emails: number; texts: number; skipped?: number };
-	type BroadcastResult = { recipients: number; emails: number; texts: number };
+	type RemindResult = {
+		parties: number;
+		emails: number;
+		texts: number;
+		skipped?: number;
+		failed?: number;
+		error?: string;
+	};
+	type BroadcastResult = {
+		recipients: number;
+		emails: number;
+		texts: number;
+		failed?: number;
+		error?: string;
+	};
+
+	// ── who a send can actually reach ───────────────────────────────────────
+	// A party with only a phone is invisible to an email-only run: nothing is
+	// sent and nothing fails. Counting that here, before the button is pressed,
+	// is the difference between "42 invited" and 42 people who heard nothing.
+	const hasEmail = (p: AdminPartyView) =>
+		!!p.contact_email.trim() || p.guests.some((g) => (g.email ?? '').trim());
+	const hasPhone = (p: AdminPartyView) =>
+		!!p.contact_phone.trim() || p.guests.some((g) => (g.phone ?? '').trim());
 
 	let inviteBusy = $state(false);
 	let inviteError = $state('');
 	let inviteResult = $state<InviteResult | null>(null);
 	let inviteAudience = $state<'uninvited' | 'all'>('uninvited');
+	let inviteSms = $state(true);
 	const uninvitedCount = $derived(data.authed ? data.parties.filter((p) => !p.invited_at).length : 0);
+	const inviteTargets = $derived.by(() => {
+		if (!data.authed) return [];
+		return inviteAudience === 'all' ? data.parties : data.parties.filter((p) => !p.invited_at);
+	});
+	const inviteReach = $derived.by(() => {
+		const smsOn = data.authed && data.smsConfigured && inviteSms;
+		const t = inviteTargets;
+		const unreachable = t.filter((p) => !hasEmail(p) && !(smsOn && hasPhone(p)));
+		return {
+			total: t.length,
+			smsOn,
+			byEmail: t.filter(hasEmail).length,
+			byText: smsOn ? t.filter(hasPhone).length : 0,
+			// Phone-only parties this run would skip because texts are switched off —
+			// the fixable case, worth naming separately from "no contact at all".
+			textsOff: t.filter((p) => !hasEmail(p) && hasPhone(p) && !smsOn).length,
+			unreachable: unreachable.length,
+			reachable: t.length - unreachable.length
+		};
+	});
 	const handleInvite: SubmitFunction = () => {
 		inviteBusy = true;
 		inviteError = '';
@@ -323,6 +368,11 @@
 									{data.partlySent.includes(party.id) ? 'partly invited' : 'not invited'}
 								</span>
 							{/if}
+							{#if !hasEmail(party) && !hasPhone(party)}
+								<span class="chip warn">no contact</span>
+							{:else if !hasPhone(party)}
+								<span class="chip wait">no phone</span>
+							{/if}
 							{#if party.responded_at}
 								<span class="chip ok">responded</span>
 							{:else}
@@ -381,21 +431,53 @@
 					</select>
 				</label>
 				{#if data.smsConfigured}
-					<label class="check"><input type="checkbox" name="sms" checked /> also send texts</label>
+					<label class="check">
+						<input type="checkbox" name="sms" bind:checked={inviteSms} /> also send texts
+					</label>
 				{/if}
 				<ConfirmButton
 					label="Send invitations"
 					confirmLabel="Yes, send"
-					message={`This emails ${inviteAudience === 'all' ? data.parties.length : uninvitedCount} ${
-						(inviteAudience === 'all' ? data.parties.length : uninvitedCount) === 1
-							? 'party'
-							: 'parties'
-					}.`}
+					message={`This reaches ${inviteReach.reachable} of ${inviteReach.total} ${
+						inviteReach.total === 1 ? 'party' : 'parties'
+					}${
+						inviteReach.unreachable
+							? ` — ${inviteReach.unreachable} ${
+									inviteReach.unreachable === 1 ? 'has' : 'have'
+								} no contact this run can use.`
+							: '.'
+					}`}
 					busy={inviteBusy}
 					busyLabel="Sending…"
 					disabled={inviteAudience === 'uninvited' && uninvitedCount === 0}
 				/>
 			</form>
+
+			{#if inviteReach.total}
+				<p class="hint reach">
+					Reaches <b>{inviteReach.reachable}</b> of {inviteReach.total}
+					{inviteReach.total === 1 ? 'party' : 'parties'} —
+					{inviteReach.byEmail} by email{#if inviteReach.smsOn}, {inviteReach.byText} by text{/if}.
+				</p>
+				{#if inviteReach.textsOff}
+					<p class="err" role="alert">
+						{inviteReach.textsOff}
+						{inviteReach.textsOff === 1 ? 'party has' : 'parties have'} a phone number but no email —
+						{#if data.smsConfigured}
+							tick <b>also send texts</b> or they get nothing.
+						{:else}
+							they get nothing until Twilio is configured.
+						{/if}
+					</p>
+				{/if}
+				{#if inviteReach.unreachable - inviteReach.textsOff > 0}
+					<p class="err" role="alert">
+						{inviteReach.unreachable - inviteReach.textsOff}
+						{inviteReach.unreachable - inviteReach.textsOff === 1 ? 'party has' : 'parties have'} no
+						email and no phone — add a contact, or send those by hand with the invite link.
+					</p>
+				{/if}
+			{/if}
 			{#if inviteResult}
 				<p class="ok">
 					Invited {inviteResult.parties}
@@ -411,10 +493,19 @@
 						this again; anyone already reached will be skipped. First error: {inviteResult.error}
 					</p>
 				{/if}
-				{#if inviteResult.parties === 0}
+				{#if inviteResult.unreachable}
+					<p class="err">
+						{inviteResult.unreachable}
+						{inviteResult.unreachable === 1 ? 'party was' : 'parties were'} skipped with no usable contact:
+						{inviteResult.unreachableNames.join(', ')}{#if inviteResult.unreachable > inviteResult.unreachableNames.length}
+							and {inviteResult.unreachable - inviteResult.unreachableNames.length} more{/if}. They
+						stay "not invited" — add a phone or email and run this again.
+					</p>
+				{/if}
+				{#if inviteResult.parties === 0 && !inviteResult.unreachable}
 					<p class="hint">
-						<i>No parties matched — either everyone's already invited, or no parties have a contact
-							email. Add emails, or choose "Everyone (re-send)".</i>
+						<i>No parties matched — everyone's already invited. Choose "Everyone (re-send)" to send
+							again.</i>
 					</p>
 				{/if}
 			{/if}
@@ -448,6 +539,11 @@
 					{#if remindResult.skipped}
 						({remindResult.skipped} skipped — reminded in the last 48h.){/if}
 				</p>
+				{#if remindResult.failed}
+					<p class="err">
+						{remindResult.failed} send(s) failed. First error: {remindResult.error}
+					</p>
+				{/if}
 			{/if}
 			{#if remindError}<p class="err" role="alert">{remindError}</p>{/if}
 		</section>
@@ -507,6 +603,11 @@
 					Sent to {broadcastResult.recipients} parties — {broadcastResult.emails} emails,
 					{broadcastResult.texts} texts.
 				</p>
+				{#if broadcastResult.failed}
+					<p class="err">
+						{broadcastResult.failed} send(s) failed. First error: {broadcastResult.error}
+					</p>
+				{/if}
 			{/if}
 			{#if broadcastError}<p class="err" role="alert">{broadcastError}</p>{/if}
 		</section>
@@ -692,6 +793,12 @@
 	}
 	.inline-hint {
 		margin-left: 0.8rem;
+	}
+	/* The reachability line sits under the send button — it's the last thing read
+	   before a batch goes out, so it gets a little more weight than a plain hint. */
+	.reach {
+		color: var(--ink-muted);
+		margin-top: 0.6rem;
 	}
 	.ok {
 		color: #9db07f;
