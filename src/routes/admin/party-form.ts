@@ -83,13 +83,11 @@ export const blankParty = (key: string): PartyDraft => ({
 export const isBlankRow = (g: GuestDraft) =>
 	!g.name.trim() && !g.email.trim() && !g.phone.trim() && !g.is_plus_one;
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-export const emailError = (v: string) =>
-	v.trim() && !EMAIL_RE.test(v.trim()) ? 'This doesn’t look like an email address.' : '';
-
-// Phone validation and E.164 normalisation live in $lib/phone — the field formats
-// itself as you type, so there's no "start with +1" nudge to give any more.
+// Email and phone validation live in $lib so the guest-facing RSVP form and the
+// submit endpoint judge a plus-one's contact details exactly as the editor does.
+// The phone field formats itself as you type, so there's no "start with +1"
+// nudge to give any more.
+export { emailError } from '$lib/validate';
 export { phoneError } from '$lib/phone';
 
 /**

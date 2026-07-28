@@ -5,7 +5,7 @@
 	import { SvelteMap } from 'svelte/reactivity';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import ConfirmButton from './ConfirmButton.svelte';
-	import PhoneInput from './PhoneInput.svelte';
+	import PhoneInput from '$lib/components/PhoneInput.svelte';
 	import { toE164 } from '$lib/phone';
 	import { blankAddress } from '$lib/types';
 	import {

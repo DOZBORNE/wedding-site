@@ -7,7 +7,10 @@
         type PartyCandidate,
         type PublicParty,
     } from "$lib/types";
+    import { emailError } from "$lib/validate";
+    import { phoneError } from "$lib/phone";
     import Icon from "./Icon.svelte";
+    import PhoneInput from "./PhoneInput.svelte";
     import Seal from "./Seal.svelte";
 
     let { party = null }: { party?: PublicParty | null } = $props();
@@ -21,6 +24,11 @@
            untouched so a value already on the record survives a re-save. */
         meal: string;
         dietary: string;
+        /* Contact details for a plus-one, collected here and nowhere else. Always
+           starts blank: a guest's own contact info is never sent to the browser,
+           so these are write-only — see toRows. */
+        email: string;
+        phone: string;
         /** Plus-one seats stay folded away until someone actually asks for one. */
         revealed: boolean;
     };
@@ -67,6 +75,11 @@
                 : (g.attending ?? true),
             meal: g.meal,
             dietary: g.dietary,
+            // Blank even on a re-edit — the party's own contact details never
+            // travel to the browser, and the submit endpoint only writes these
+            // when they're filled in, so an untouched field can't erase them.
+            email: "",
+            phone: "",
             revealed: !g.is_plus_one || !!g.name.trim() || g.attending === true,
         }));
     }
@@ -175,7 +188,29 @@
         rows[i].attending = false;
         rows[i].name = "";
         rows[i].dietary = "";
+        rows[i].email = "";
+        rows[i].phone = "";
     }
+
+    /** A plus-one's contact details are optional — but if given, they have to work. */
+    const plusFieldError = (r: Row, f: "email" | "phone") =>
+        f === "email" ? emailError(r.email) : phoneError(r.phone);
+
+    /** Quiet until the field is left or the form is submitted, as the address block is. */
+    const showPlusErr = (r: Row, f: "email" | "phone") =>
+        attempted || touched[`${f}-${r.id}`] ? plusFieldError(r, f) : "";
+
+    const plusContactError = $derived.by(() => {
+        for (const r of rows) {
+            if (!r.is_plus_one || !r.revealed || !r.attending) continue;
+            const who = r.name.trim() || "your guest";
+            if (plusFieldError(r, "email"))
+                return `${who}’s email doesn’t look right.`;
+            if (plusFieldError(r, "phone"))
+                return `${who}’s phone number doesn’t look right.`;
+        }
+        return "";
+    });
 
     // ── address ───────────────────────────────────────────────────────────────
     const addressErrors = $derived({
@@ -214,6 +249,10 @@
                 "Please tell us your guest’s name — or remove the extra seat with the ×.";
             return;
         }
+        if (plusContactError) {
+            errorMsg = plusContactError;
+            return;
+        }
         if (!addressOk) {
             errorMsg = "We need your mailing address before you can seal this.";
             return;
@@ -231,7 +270,15 @@
                         meal: r.attending ? r.meal : "",
                         dietary: r.attending ? r.dietary : "",
                         ...(r.is_plus_one
-                            ? { name: r.revealed ? r.name : "" }
+                            ? {
+                                  name: r.revealed ? r.name : "",
+                                  // Blank leaves whatever's on the record alone,
+                                  // so a re-save can't wipe details given earlier.
+                                  email:
+                                      r.revealed && r.attending ? r.email : "",
+                                  phone:
+                                      r.revealed && r.attending ? r.phone : "",
+                              }
                             : {}),
                     })),
                     address,
@@ -434,6 +481,61 @@
                                 aria-label="Dietary needs for {row.name ||
                                     'guest'}"
                             />
+                        {/if}
+                        {#if row.is_plus_one && row.attending}
+                            <div class="plus-contact">
+                                <p class="plus-contact-why">
+                                    So we can reach them directly about day-of
+                                    details — optional.
+                                </p>
+                                <div class="plus-contact-fields">
+                                    <div class="field">
+                                        <input
+                                            class="plus-c"
+                                            type="email"
+                                            autocomplete="off"
+                                            bind:value={rows[i].email}
+                                            placeholder="their email"
+                                            aria-label="Email for {row.name ||
+                                                'your guest'}"
+                                            class:bad={!!showPlusErr(
+                                                row,
+                                                "email",
+                                            )}
+                                            onblur={() =>
+                                                touch(`email-${row.id}`)}
+                                        />
+                                        {#if showPlusErr(row, "email")}<em
+                                                class="f-err"
+                                                >{showPlusErr(
+                                                    row,
+                                                    "email",
+                                                )}</em
+                                            >{/if}
+                                    </div>
+                                    <div class="field">
+                                        <PhoneInput
+                                            bind:value={rows[i].phone}
+                                            placeholder="their phone"
+                                            ariaLabel="Phone for {row.name ||
+                                                'your guest'}"
+                                            invalid={!!showPlusErr(
+                                                row,
+                                                "phone",
+                                            )}
+                                            onblur={() =>
+                                                touch(`phone-${row.id}`)}
+                                        />
+                                        {#if showPlusErr(row, "phone")}<em
+                                                class="f-err"
+                                                >{showPlusErr(
+                                                    row,
+                                                    "phone",
+                                                )}</em
+                                            >{/if}
+                                    </div>
+                                </div>
+                            </div>
                         {/if}
                     </div>
                 {/if}
@@ -858,6 +960,57 @@
         color: var(--parchment);
         background: var(--claret);
         border-color: var(--claret);
+    }
+    /* Contact details sit under the seat they belong to, full width like the
+       allergies box, so they read as part of that guest and not the household's. */
+    .plus-contact {
+        grid-column: 1 / -1;
+    }
+    .plus-contact-why {
+        margin: 0 0 0.4rem;
+        font-size: 0.88rem;
+        font-style: italic;
+        color: rgba(58, 36, 32, 0.7);
+    }
+    .plus-contact-fields {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.6rem;
+        /* PhoneInput brings its own field styling and reads these tokens, so the
+           two boxes match without duplicating the rules. */
+        --field-bg: rgba(255, 253, 247, 0.3);
+        --field-bg-focus: rgba(255, 253, 247, 0.75);
+        --ink-on-dark: var(--ink-on-paper);
+        --ink-faint: rgba(58, 36, 32, 0.55);
+        --line: rgba(58, 36, 32, 0.4);
+    }
+    .plus-c {
+        min-width: 0;
+        background: var(--field-bg);
+        border: 1px solid var(--line);
+        font-family: var(--body);
+        font-size: 0.95rem;
+        color: var(--ink-on-paper);
+        padding: 0.5rem 0.7rem;
+    }
+    .plus-c:focus {
+        outline: none;
+        background: var(--field-bg-focus);
+        border-color: var(--claret);
+    }
+    .plus-c::placeholder {
+        color: var(--ink-faint);
+    }
+    /* The blush that flags a bad field elsewhere is nearly invisible against
+       parchment, so these borrow the address block's stronger red. */
+    .plus-contact-fields :global(input.bad) {
+        border-color: #7a1f28;
+        background: rgba(122, 31, 40, 0.06);
+    }
+    @media (max-width: 33rem) {
+        .plus-contact-fields {
+            grid-template-columns: 1fr;
+        }
     }
 
     .g-pills {

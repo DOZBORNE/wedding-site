@@ -234,7 +234,7 @@ export const TRAVEL = [
 export const FAQ = [
   {
     q: "What should I wear?",
-    a: "Casual and chill — come as you are! There's no dress code. It's an outdoor garden evening with cozy fall vibes, so wear whatever's comfortable and pick shoes that can handle grass and gravel paths (it gets crisp after sunset, so maybe bring a layer). Totally optional: if you'd like to match our fall palette — olive, burgundy, mauve, cream — we'd love it, but only if you want to.",
+    a: "Casual and chill — semi formal/cocktail. It's an outdoor garden evening with cozy fall vibes, so wear whatever's comfortable and pick shoes that can handle grass and gravel paths (it gets crisp after sunset, so maybe bring a layer). Totally optional: if you'd like to match our fall palette — olive, burgundy, mauve, cream — we'd love it, but only if you want to.",
   },
   {
     q: "Will the wedding be indoors or outdoors?",

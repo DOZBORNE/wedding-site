@@ -6,6 +6,8 @@ import { logMessage } from '$lib/server/messages';
 import { hasParty } from '$lib/server/rsvp-session';
 import { isAdmin } from '$lib/server/admin';
 import { MEALS, WEDDING } from '$lib/config';
+import { toE164 } from '$lib/phone';
+import { isEmail } from '$lib/validate';
 import { addressIsComplete, type Guest, type PartyAddress } from '$lib/types';
 
 type SubmitGuest = {
@@ -13,8 +15,28 @@ type SubmitGuest = {
 	attending: boolean | null;
 	meal: string;
 	dietary: string;
+	/** Plus-one seats only — the guest names and describes the person they bring. */
 	name?: string;
+	email?: string;
+	phone?: string;
 };
+
+/**
+ * Contact details for a plus-one, as far as they're usable. Both fields are
+ * optional, so anything blank or unusable is simply left off the patch rather
+ * than failing the RSVP — and a blank never overwrites what's already on the
+ * record, since the form can't show a guest the details it holds.
+ */
+function plusOneContact(update: SubmitGuest): Record<string, string> {
+	const patch: Record<string, string> = {};
+	const email = String(update.email ?? '')
+		.trim()
+		.slice(0, 120);
+	if (isEmail(email)) patch.email = email;
+	const phone = toE164(String(update.phone ?? '').trim());
+	if (phone) patch.phone = phone;
+	return patch;
+}
 
 function rsvpClosed(): boolean {
 	const deadline = new Date(WEDDING.rsvpDeadlineISO).getTime();
@@ -94,9 +116,10 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			meal: MEALS.includes(update.meal) ? update.meal : '',
 			dietary: String(update.dietary ?? '').slice(0, 500)
 		};
-		// only plus-one slots may (re)name themselves
-		if (existing.is_plus_one && typeof update.name === 'string') {
-			patch.name = update.name.trim().slice(0, 80);
+		// only plus-one slots may (re)name themselves, or give us a way to reach them
+		if (existing.is_plus_one) {
+			if (typeof update.name === 'string') patch.name = update.name.trim().slice(0, 80);
+			Object.assign(patch, plusOneContact(update));
 		}
 		const { error } = await db()
 			.from('wed_guests')
