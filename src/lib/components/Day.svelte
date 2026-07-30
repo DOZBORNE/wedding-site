@@ -14,7 +14,6 @@
         { name: "Burgundy", hex: "#4B1F24" },
         { name: "Claret", hex: "#381015" },
         { name: "Chocolate", hex: "#4A2E1F" },
-        { name: "Cream", hex: "#E8DCC8" },
     ];
 </script>
 
@@ -51,9 +50,9 @@
         <div class="dress" use:reveal>
             <div class="eyebrow">What to wear</div>
             <p class="lede">
-                Casual and chill — come as you are. It's an outdoor garden
-                evening with cozy fall vibes, so wear whatever's comfortable for
-                grass, gravel paths, and a crisp night after sunset.
+                Semi formal/cocktail. It's an outdoor garden evening with cozy
+                fall vibes, so wear whatever's comfortable for grass, gravel
+                paths, and a crisp night after sunset.
             </p>
             <p class="palette-note">
                 No dress code, promise. But if you'd like to match our fall

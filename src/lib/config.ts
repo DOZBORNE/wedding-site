@@ -78,7 +78,7 @@ export const CHAPTERS: StoryChapter[] = [
   },
   {
     numeral: "Chapter II",
-    title: "The Inbetween",
+    title: "The In-between",
     body: "The middle chapters are the best ones; this is where love grew its roots. From trips to the mountains and ordinary evenings to exploring Birmingham street by street and discovering a hundred small things about the person across the table, they became the best of friends and tasted the particular sweetness of being fully known, fully loved, and still chosen.",
     plates: [
       {
@@ -234,7 +234,7 @@ export const TRAVEL = [
 export const FAQ = [
   {
     q: "What should I wear?",
-    a: "Casual and chill — semi formal/cocktail. It's an outdoor garden evening with cozy fall vibes, so wear whatever's comfortable and pick shoes that can handle grass and gravel paths (it gets crisp after sunset, so maybe bring a layer). Totally optional: if you'd like to match our fall palette — olive, burgundy, mauve, cream — we'd love it, but only if you want to.",
+    a: "Semi formal/cocktail. It's an outdoor garden evening with cozy fall vibes, so wear whatever's comfortable and pick shoes that can handle grass and gravel paths (it gets crisp after sunset, so maybe bring a layer). Totally optional: if you'd like to match our fall palette — olive, burgundy, mauve, cream — we'd love it, but only if you want to.",
   },
   {
     q: "Will the wedding be indoors or outdoors?",
