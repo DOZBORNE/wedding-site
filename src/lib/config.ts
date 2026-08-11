@@ -72,7 +72,6 @@ export const CHAPTERS: StoryChapter[] = [
         src: "/photos/dev_pumpkin_patch.jpg",
         caption: "where it started",
         tone: "olive",
-        body: "Time and again, laughing to no end — those early days spent young, and very much in love.",
       },
     ],
   },
