@@ -64,7 +64,7 @@ export const CHAPTERS: StoryChapter[] = [
     ].join("\n\n"),
     plates: [
       {
-        src: "/photos/jess_at_pizza_grace.jpg",
+        src: "/photos/jess_che-fon-fon.jpg",
         caption: "the early days",
         tone: "blush",
       },
