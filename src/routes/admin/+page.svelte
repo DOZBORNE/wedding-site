@@ -1,10 +1,13 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import type { SubmitFunction } from '@sveltejs/kit';
-	import { MEALS } from '$lib/config';
 	import ConfirmButton from './ConfirmButton.svelte';
 	import PartyEditor from './PartyEditor.svelte';
+	import ResponseBoard from './ResponseBoard.svelte';
+	import ResponseDrawer from './ResponseDrawer.svelte';
+	import { buildLedger, type LedgerView } from './responses';
 	import { blankParty, formatAddress, type AdminPartyView, type PartyDraft } from './party-form';
 
 	let { data } = $props();
@@ -39,25 +42,37 @@
 		};
 	};
 
-	// ── stats ───────────────────────────────────────────────────────────────
-	let stats = $derived.by(() => {
-		if (!data.authed) return null;
-		const guests = data.parties.flatMap((p) => p.guests);
-		const accepted = guests.filter((g) => g.attending === true);
-		const meals = Object.fromEntries(
-			MEALS.map((m) => [m, accepted.filter((g) => g.meal === m).length])
-		);
-		return {
-			parties: data.parties.length,
-			invited: data.parties.filter((p) => p.invited_at).length,
-			responded: data.parties.filter((p) => p.responded_at).length,
-			guests: guests.length,
-			accepted: accepted.length,
-			declined: guests.filter((g) => g.attending === false).length,
-			pending: guests.filter((g) => g.attending === null).length,
-			meals
-		};
-	});
+	// ── the ledger — every reply sorted into piles, for the board and the pop-out ──
+	const ledger = $derived(buildLedger(data.authed ? data.parties : []));
+
+	let ledgerOpen = $state(false);
+	let ledgerView = $state<LedgerView>('accepting');
+	function openLedger(view: LedgerView) {
+		ledgerView = view;
+		ledgerOpen = true;
+	}
+
+	/**
+	 * Land on a party from the pop-out: close it, drop any filter hiding the row,
+	 * open the party, and mark it so the eye finds it after the scroll.
+	 */
+	let landedOn = $state('');
+	let landedTimer: ReturnType<typeof setTimeout>;
+	async function jumpToParty(id: string) {
+		ledgerOpen = false;
+		filter = '';
+		await tick();
+		const el = document.getElementById(`party-${id}`);
+		if (el instanceof HTMLDetailsElement) {
+			el.open = true;
+			// Top, not centre: an open party is taller than the viewport, so centring
+			// it would push its own name off the screen. scroll-margin clears the nav.
+			el.scrollIntoView({ block: 'start' });
+		}
+		landedOn = id;
+		clearTimeout(landedTimer);
+		landedTimer = setTimeout(() => (landedOn = ''), 2400);
+	}
 
 	// ── new-party drafts — kept in localStorage so a refresh loses nothing ──
 	const DRAFTS_KEY = 'wed-admin-party-drafts';
@@ -295,20 +310,7 @@
 			</form>
 		</header>
 
-		{#if stats}
-			<section class="stats">
-				<div><b>{stats.parties}</b><span>parties</span></div>
-				<div><b>{stats.invited}</b><span>invited</span></div>
-				<div><b>{stats.responded}</b><span>responded</span></div>
-				<div><b>{stats.guests}</b><span>guests invited</span></div>
-				<div class="good"><b>{stats.accepted}</b><span>accepting</span></div>
-				<div class="bad"><b>{stats.declined}</b><span>declining</span></div>
-				<div><b>{stats.pending}</b><span>pending</span></div>
-				{#each MEALS as meal (meal)}
-					<div><b>{stats.meals[meal]}</b><span>{meal.toLowerCase()}</span></div>
-				{/each}
-			</section>
-		{/if}
+		<ResponseBoard parties={data.parties} {ledger} onOpen={openLedger} />
 
 		<section class="panel">
 			<div class="panel-head">
@@ -356,13 +358,37 @@
 			{/if}
 
 			{#each visibleParties as party (party.id)}
-				<details class="party">
+				<details class="party" class:landed={landedOn === party.id} id="party-{party.id}">
 					<summary>
 						<span class="p-name">{party.display_name}</span>
 						<span class="p-meta">
 							<code>{party.code}</code>
 							· {party.guests.length}
 							{party.guests.length === 1 ? 'guest' : 'guests'}
+							<!-- Quiet marks, not words: a party that wrote something carries the
+							     glyph, and pressing it opens that pile in the pop-out. -->
+							{#if party.song_requests.trim()}
+								<button
+									class="mark"
+									type="button"
+									title="Song request — see them all"
+									onclick={(e) => {
+										e.preventDefault();
+										openLedger('songs');
+									}}>♪</button
+								>
+							{/if}
+							{#if party.message.trim()}
+								<button
+									class="mark quote"
+									type="button"
+									title="Left a note — see them all"
+									onclick={(e) => {
+										e.preventDefault();
+										openLedger('notes');
+									}}>”</button
+								>
+							{/if}
 							{#if dirtyEdits[party.id]}<span class="chip warn">unsaved edits</span>{/if}
 							{#if !party.invited_at}
 								<span class="chip wait">
@@ -640,6 +666,14 @@
 				<p class="hint">No notes yet.</p>
 			{/each}
 		</section>
+
+		<ResponseDrawer
+			bind:open={ledgerOpen}
+			bind:view={ledgerView}
+			{ledger}
+			{notify}
+			onJump={jumpToParty}
+		/>
 	{/if}
 </main>
 
@@ -724,38 +758,6 @@
 	.small {
 		padding: 0.5rem 1.2rem;
 		font-size: 0.7rem;
-	}
-	.stats {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-		gap: 1px;
-		background: var(--line);
-		border: 1px solid var(--line);
-	}
-	.stats > div {
-		background: var(--espresso);
-		padding: 0.9rem 0.6rem;
-		text-align: center;
-		display: grid;
-		gap: 0.1rem;
-	}
-	.stats b {
-		font-family: var(--display);
-		font-size: 1.5rem;
-		color: var(--parchment);
-		font-weight: 400;
-	}
-	.stats span {
-		font-size: 0.68rem;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		color: var(--ink-faint);
-	}
-	.stats .good b {
-		color: #9db07f;
-	}
-	.stats .bad b {
-		color: var(--blush);
 	}
 	.panel {
 		border: 1px solid var(--line);
@@ -865,6 +867,9 @@
 	.party {
 		border-top: 1px solid var(--line);
 		padding: 0.6rem 0;
+		/* clears both the site nav and the condensed rail, which is showing by the
+		   time the pop-out scrolls a party into view */
+		scroll-margin-top: 8.5rem;
 	}
 	.party summary {
 		cursor: pointer;
@@ -891,6 +896,33 @@
 	.hint code {
 		color: var(--candle);
 		font-size: 0.85em;
+	}
+	/* The party the pop-out sent you to, held for a couple of seconds so the eye
+	   catches it after the scroll. */
+	.party.landed {
+		background: rgba(227, 184, 127, 0.07);
+		box-shadow: inset 2px 0 0 var(--candle);
+	}
+	/* A glyph, not a word — enough to say "they wrote something" without
+	   crowding out the chips that carry state. */
+	.mark {
+		background: none;
+		border: 0;
+		padding: 0 0.1rem;
+		font-size: 0.95rem;
+		line-height: 1;
+		color: var(--candle);
+		cursor: pointer;
+		opacity: 0.75;
+		transition: opacity 0.2s ease;
+	}
+	.mark:hover,
+	.mark:focus-visible {
+		opacity: 1;
+	}
+	.mark.quote {
+		font-family: var(--display);
+		font-size: 1.25rem;
 	}
 	.chip {
 		font-size: 0.64rem;

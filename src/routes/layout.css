@@ -77,8 +77,10 @@ body {
 	overscroll-behavior: none;
 	scroll-behavior: smooth;
 }
-/* while the nav drawer is open, freeze the scroller instead of the body */
-html.nav-open .scroll-root {
+/* while the nav drawer — or the admin replies pop-out — is open, freeze the
+   scroller instead of the body */
+html.nav-open .scroll-root,
+html.drawer-open .scroll-root {
 	overflow: hidden;
 }
 

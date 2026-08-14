@@ -148,7 +148,7 @@ export async function sendRsvpConfirmation(to: string, partyName: string, guests
 				`<tr>
 					<td style="padding:6px 0;">${g.name || 'Guest'}</td>
 					<td style="padding:6px 0;text-align:right;font-style:italic;">
-						${g.attending === true ? `joyfully accepts${g.meal ? ' · ' + g.meal : ''}` : g.attending === false ? 'regretfully declines' : '—'}
+						${g.attending === true ? 'joyfully accepts' : g.attending === false ? 'regretfully declines' : '—'}
 					</td>
 				</tr>`
 		)

@@ -414,9 +414,7 @@
 					</button>
 					{#if g.id && g.attending !== null && g.attending !== undefined}
 						<div class="g-rsvp" class:declines={g.attending === false}>
-							{g.attending ? 'accepts' : 'declines'}{g.attending && g.meal ? ` · ${g.meal}` : ''}{g.dietary
-								? ` · ${g.dietary}`
-								: ''}
+							{g.attending ? 'accepts' : 'declines'}{g.dietary ? ` · ${g.dietary}` : ''}
 						</div>
 					{/if}
 					{#if (showRow(g, 'name') && err.name) || (showRow(g, 'email') && err.email) || (showRow(g, 'phone') && err.phone)}
