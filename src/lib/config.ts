@@ -138,7 +138,7 @@ export const GALLERY = [
   },
   {
     src: "/photos/dev_jess_mountains_creek.jpg",
-    caption: "smokey mountains ;)",
+    caption: "smoky mountains ;)",
     tone: "candle",
     tall: true,
   },
