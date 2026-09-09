@@ -26,8 +26,10 @@
 		"vite": "^8.0.16"
 	},
 	"dependencies": {
+		"@fontsource/archivo": "^5.3.0",
 		"@fontsource/bodoni-moda": "^5.2.7",
 		"@fontsource/cormorant-garamond": "^5.2.11",
+		"@fontsource/spline-sans-mono": "^5.3.0",
 		"@supabase/supabase-js": "^2.110.2",
 		"libphonenumber-js": "^1.13.9",
 		"maplibre-gl": "^5.24.0",

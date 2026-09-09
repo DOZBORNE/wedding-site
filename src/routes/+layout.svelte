@@ -21,6 +21,9 @@
 	import Footer from '$lib/components/Footer.svelte';
 
 	let { children } = $props();
+	// The seating planner is an internal tool, not a guest page: it takes over the
+	// viewport and brings its own shell, so the site chrome sits this one out.
+	const isTool = $derived(page.url.pathname.startsWith('/seating'));
 	const title = `${COUPLE.first} & ${COUPLE.partnerFirst} — ${WEDDING.dateLabel}`;
 	const description = `${COUPLE.first} ${COUPLE.last} & ${COUPLE.partnerFirst} ${COUPLE.partnerLast} are getting married ${WEDDING.dateLabel} at ${VENUE.name}, ${VENUE.shortAddress}. Details & RSVP.`;
 	const ogAlt = `A claret and cream wedding invitation: a Roman arch between two ivy-wrapped columns holding the monogram D&J — ${title}, ${VENUE.name}`;
@@ -48,9 +51,13 @@
 	<meta name="theme-color" content="#221A14" />
 </svelte:head>
 
-<div class="grain" aria-hidden="true"></div>
-<div class="scroll-root">
-	<Nav />
+{#if isTool}
 	{@render children()}
-	<Footer />
-</div>
+{:else}
+	<div class="grain" aria-hidden="true"></div>
+	<div class="scroll-root">
+		<Nav />
+		{@render children()}
+		<Footer />
+	</div>
+{/if}
