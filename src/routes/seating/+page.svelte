@@ -276,6 +276,71 @@
 		}
 	}
 
+	/**
+	 * Takes the payload the standalone planner's "Export every saved plan" button
+	 * produces, and posts each plan into the shared table. Also accepts a bare
+	 * array, or a single plan, so a hand-assembled paste still works.
+	 */
+	async function importPlans() {
+		const pasted = prompt('Paste the exported plans here:');
+		if (!pasted) return;
+
+		let incoming: unknown;
+		try {
+			incoming = JSON.parse(pasted);
+		} catch {
+			showToast('That did not parse as JSON.');
+			return;
+		}
+
+		const asRecord = incoming as { plans?: unknown; items?: unknown };
+		const candidates = Array.isArray(incoming)
+			? incoming
+			: Array.isArray(asRecord?.plans)
+				? asRecord.plans
+				: Array.isArray(asRecord?.items)
+					? [incoming]
+					: [];
+		if (!candidates.length) {
+			showToast('No plans found in that paste.');
+			return;
+		}
+
+		saving = true;
+		const added: SavedPlan[] = [];
+		let failed = 0;
+		try {
+			for (const [index, candidate] of candidates.entries()) {
+				const plan = candidate as Partial<SavedPlan>;
+				const response = await fetch('/api/seating', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						name: plan.name?.trim() || `Imported plan ${index + 1}`,
+						items: plan.items ?? [],
+						spacing: plan.spacing ?? DEFAULT_SPACING
+					})
+				});
+				if (!response.ok) {
+					failed += 1;
+					continue;
+				}
+				added.push((await response.json()).plan);
+			}
+		} catch {
+			showToast('Lost the connection part-way through the import.');
+		} finally {
+			saving = false;
+		}
+
+		savedPlans = [...added.reverse(), ...savedPlans];
+		showToast(
+			failed
+				? `Imported ${added.length}, ${failed} could not be saved`
+				: `Imported ${added.length} ${added.length === 1 ? 'plan' : 'plans'}`
+		);
+	}
+
 	function openPlan(plan: SavedPlan) {
 		remember();
 		items = plan.items.map((item) => ({ ...item }));
@@ -478,6 +543,9 @@
 				<div class="button-row">
 					<button class="button primary" type="button" onclick={savePlan} disabled={saving}>
 						{saving ? 'Saving…' : 'Save plan'}
+					</button>
+					<button class="button" type="button" onclick={importPlans} disabled={saving}>
+						Import
 					</button>
 				</div>
 				<div class="saved-list">
