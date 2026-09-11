@@ -35,9 +35,21 @@ const pileOf = (g: Guest): Pile =>
 	g.attending === true ? 'accepting' : g.attending === false ? 'declining' : 'awaiting';
 
 /**
- * Every reply, sorted into piles. Parties arrive ordered by name and their guests
- * by seat order, so the lists come out in the same order as the party list below —
- * scanning the pop-out and scanning the page feel like the same document.
+ * Newest reply first. `responded_at` is re-stamped every time a household submits,
+ * so it doubles as an updated-at; parties that haven't replied at all sink to the
+ * bottom. Ties keep their arrival order (parties by name, guests by seat).
+ */
+const byMostRecentReply = (a: GuestRow, b: GuestRow) => {
+	const ta = a.party.responded_at ? Date.parse(a.party.responded_at) : 0;
+	const tb = b.party.responded_at ? Date.parse(b.party.responded_at) : 0;
+	return tb - ta;
+};
+
+/**
+ * Every reply, sorted into piles. The three answer piles are ordered by most recent
+ * reply, so what just came in sits at the top. Songs and notes keep the party list's
+ * order (parties by name, guests by seat), so scanning the pop-out and scanning the
+ * page feel like the same document.
  */
 export function buildLedger(parties: AdminPartyView[]): Ledger {
 	const ledger: Ledger = { accepting: [], declining: [], awaiting: [], songs: [], notes: [] };
@@ -60,6 +72,9 @@ export function buildLedger(parties: AdminPartyView[]): Ledger {
 			});
 		}
 	}
+	ledger.accepting.sort(byMostRecentReply);
+	ledger.declining.sort(byMostRecentReply);
+	ledger.awaiting.sort(byMostRecentReply);
 	// RSVP notes first — the guests' own words are what you came to read.
 	ledger.notes.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'rsvp' ? -1 : 1));
 	return ledger;
