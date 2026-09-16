@@ -4,6 +4,7 @@
 	import {
 		VIEWS,
 		guestHay,
+		pileOf,
 		noteHay,
 		songHay,
 		songsAsText,
@@ -88,7 +89,7 @@
 
 	const q = $derived(query.trim().toLowerCase());
 	const guestRows = $derived(
-		view === 'accepting' || view === 'declining' || view === 'awaiting'
+		view === 'accepting' || view === 'declining' || view === 'awaiting' || view === 'kids'
 			? ledger[view].filter((r) => !q || guestHay(r).includes(q))
 			: []
 	);
@@ -118,6 +119,7 @@
 		accepting: 'Everyone who said yes.',
 		declining: 'Everyone who sent regrets.',
 		awaiting: 'Guests with no answer on the card yet.',
+		kids: 'Everyone you’ve marked a child or a baby — lighter plates, and babies may not need a seat.',
 		songs: 'What each household wants to hear.',
 		notes: 'Messages left with an RSVP, and your own notes on a party.'
 	};
@@ -125,6 +127,7 @@
 		accepting: 'Search guests, parties, allergies…',
 		declining: 'Search guests and parties…',
 		awaiting: 'Search guests and parties…',
+		kids: 'Search kids, parties, child or baby…',
 		songs: 'Search songs and parties…',
 		notes: 'Search notes and parties…'
 	};
@@ -132,9 +135,17 @@
 		accepting: 'No one has accepted yet. Send the invitations and the replies will land here.',
 		declining: 'No regrets yet.',
 		awaiting: 'Everyone has answered. Nothing left to chase.',
+		kids: 'No one is marked a child or a baby yet. Set it on a guest’s row in the party editor.',
 		songs: 'No song requests yet — they come in with the RSVPs.',
 		notes: 'No notes yet. Anything a household writes on their RSVP shows up here.'
 	};
+
+	/** The numbers the kids view exists for: how many are actually coming, split by plate and seat. */
+	const kidsComing = $derived.by(() => {
+		const coming = ledger.kids.filter((r) => r.guest.attending === true);
+		const babies = coming.filter((r) => r.guest.age_group === 'baby').length;
+		return { children: coming.length - babies, babies };
+	});
 
 	async function copySongs() {
 		try {
@@ -198,6 +209,13 @@
 				</button>
 			{/if}
 		</div>
+		{#if view === 'kids' && ledger.kids.length}
+			<p class="showing">
+				Coming: {kidsComing.children}
+				{kidsComing.children === 1 ? 'child' : 'children'} · {kidsComing.babies}
+				{kidsComing.babies === 1 ? 'baby' : 'babies'}
+			</p>
+		{/if}
 		{#if q}
 			<p class="showing">{shown} of {total} {shown === 1 ? 'match' : 'matches'}</p>
 		{/if}
@@ -230,19 +248,27 @@
 				{#each guestRows as row (row.key)}
 					<!-- A one-person party is usually named after that person — repeating the
 					     name back adds nothing, so the party line only shows when it differs. -->
-					{@const from = row.party.display_name === row.guest.name ? '' : row.party.display_name}
+					<!-- In the kids pile the party always shows: a child's name alone rarely
+					     tells you whose child it is. -->
+					{@const from =
+						view !== 'kids' && row.party.display_name === row.guest.name ? '' : row.party.display_name}
 					{@const diet = row.guest.dietary?.trim() ?? ''}
 					{@const chase = view === 'awaiting' && !row.party.invited_at}
+					{@const pile = pileOf(row.guest)}
+					{@const age = view === 'kids' ? row.guest.age_group : ''}
 					{@const note = row.party.message.trim()}
 					{@const showing = openNotes.has(row.key)}
-					<div class="entry {view}">
+					<div class="entry {pile}">
 						<div class="row">
 							<button class="card person" type="button" onclick={() => onJump(row.party.id)}>
 								<span class="body">
 									<span class="who">{row.guest.name || 'Plus-one (unnamed)'}</span>
-									{#if from || diet || chase}
+									{#if from || diet || chase || age}
 										<span class="from">
 											{from}
+											{#if age}<span class="tag age">{age}</span>{/if}
+											{#if age && pile === 'declining'}<span class="tag">declined</span>{/if}
+											{#if age && pile === 'awaiting'}<span class="tag">no answer yet</span>{/if}
 											{#if diet}<span class="tag diet">{diet}</span>{/if}
 											{#if chase}<span class="tag">not invited</span>{/if}
 										</span>
@@ -578,6 +604,10 @@
 		border: 1px solid var(--line);
 		padding: 0.05rem 0.4rem;
 		color: var(--ink-faint);
+	}
+	.tag.age {
+		border-color: rgba(227, 184, 127, 0.4);
+		color: var(--parchment);
 	}
 	.tag.diet {
 		border-color: rgba(227, 184, 127, 0.4);

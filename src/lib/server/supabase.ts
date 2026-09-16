@@ -22,3 +22,7 @@ export const GUEST_COLS = 'id, name, is_plus_one, attending, meal, dietary, sort
 /** Server-only columns — adds per-person contact info for admin + messaging. */
 export const GUEST_COLS_FULL =
 	'id, name, first_name, last_name, email, phone, is_plus_one, attending, meal, dietary, sort_order';
+
+/** The admin page's read — the full columns plus the hand-set age group. Kept out of
+    GUEST_COLS_FULL so invites and reminders don't depend on it. */
+export const GUEST_COLS_ADMIN = `${GUEST_COLS_FULL}, age_group`;

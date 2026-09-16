@@ -1,9 +1,9 @@
-import type { Guest } from '$lib/types';
+import { toAgeGroup, type Guest } from '$lib/types';
 import type { AdminPartyView } from './party-form';
 
 /** The three piles every invited guest lands in, and the two things they write back. */
 export type Pile = 'accepting' | 'declining' | 'awaiting';
-export type LedgerView = Pile | 'songs' | 'notes';
+export type LedgerView = Pile | 'kids' | 'songs' | 'notes';
 
 export type GuestRow = { key: string; guest: Guest; party: AdminPartyView };
 export type SongRow = { key: string; party: AdminPartyView; text: string };
@@ -19,6 +19,8 @@ export type Ledger = {
 	accepting: GuestRow[];
 	declining: GuestRow[];
 	awaiting: GuestRow[];
+	/** Everyone marked child or baby, whatever they answered — also filed in their answer pile. */
+	kids: GuestRow[];
 	songs: SongRow[];
 	notes: NoteRow[];
 };
@@ -27,11 +29,12 @@ export const VIEWS: { id: LedgerView; label: string }[] = [
 	{ id: 'accepting', label: 'Accepting' },
 	{ id: 'declining', label: 'Declining' },
 	{ id: 'awaiting', label: 'Awaiting' },
+	{ id: 'kids', label: 'Kids' },
 	{ id: 'songs', label: 'Songs' },
 	{ id: 'notes', label: 'Notes' }
 ];
 
-const pileOf = (g: Guest): Pile =>
+export const pileOf = (g: Guest): Pile =>
 	g.attending === true ? 'accepting' : g.attending === false ? 'declining' : 'awaiting';
 
 /**
@@ -45,6 +48,8 @@ const byMostRecentReply = (a: GuestRow, b: GuestRow) => {
 	return tb - ta;
 };
 
+const KID_ORDER: Record<Pile, number> = { accepting: 0, awaiting: 1, declining: 2 };
+
 /**
  * Every reply, sorted into piles. The three answer piles are ordered by most recent
  * reply, so what just came in sits at the top. Songs and notes keep the party list's
@@ -52,10 +57,19 @@ const byMostRecentReply = (a: GuestRow, b: GuestRow) => {
  * page feel like the same document.
  */
 export function buildLedger(parties: AdminPartyView[]): Ledger {
-	const ledger: Ledger = { accepting: [], declining: [], awaiting: [], songs: [], notes: [] };
+	const ledger: Ledger = {
+		accepting: [],
+		declining: [],
+		awaiting: [],
+		kids: [],
+		songs: [],
+		notes: []
+	};
 	for (const party of parties) {
 		for (const guest of party.guests) {
-			ledger[pileOf(guest)].push({ key: guest.id, guest, party });
+			const row = { key: guest.id, guest, party };
+			ledger[pileOf(guest)].push(row);
+			if (toAgeGroup(guest.age_group) !== 'adult') ledger.kids.push(row);
 		}
 		if (party.song_requests.trim()) {
 			ledger.songs.push({ key: party.id, party, text: party.song_requests.trim() });
@@ -75,6 +89,9 @@ export function buildLedger(parties: AdminPartyView[]): Ledger {
 	ledger.accepting.sort(byMostRecentReply);
 	ledger.declining.sort(byMostRecentReply);
 	ledger.awaiting.sort(byMostRecentReply);
+	// Coming first, then not yet answered, then not coming — the top of the list is
+	// who the caterer and the seating chart need to hear about.
+	ledger.kids.sort((a, b) => KID_ORDER[pileOf(a.guest)] - KID_ORDER[pileOf(b.guest)]);
 	// RSVP notes first — the guests' own words are what you came to read.
 	ledger.notes.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'rsvp' ? -1 : 1));
 	return ledger;
@@ -91,7 +108,14 @@ const hay = (...parts: (string | null | undefined)[]) =>
 
 /** The note is in the haystack too — searching a phrase you half-remember finds the person who wrote it. */
 export const guestHay = (r: GuestRow) =>
-	hay(r.guest.name, r.party.display_name, r.party.code, r.guest.dietary, r.party.message);
+	hay(
+		r.guest.name,
+		r.party.display_name,
+		r.party.code,
+		r.guest.dietary,
+		r.party.message,
+		toAgeGroup(r.guest.age_group) === 'adult' ? '' : r.guest.age_group
+	);
 export const songHay = (r: SongRow) => hay(r.text, r.party.display_name, r.party.code);
 export const noteHay = (r: NoteRow) => hay(r.text, r.party.display_name, r.party.code, r.kind);
 

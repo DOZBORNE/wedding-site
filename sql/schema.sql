@@ -40,6 +40,8 @@ create table if not exists wed_guests (
   attending    boolean,                          -- null = no answer yet
   meal         text not null default '',
   dietary      text not null default '',
+  age_group    text not null default 'adult'     -- set in /admin: 'adult' | 'child' | 'baby'
+               check (age_group in ('adult', 'child', 'baby')),
   sort_order   int not null default 0
 );
 
@@ -86,6 +88,7 @@ alter table wed_guests add column if not exists first_name text not null default
 alter table wed_guests add column if not exists last_name  text not null default '';
 alter table wed_guests add column if not exists email      text not null default '';
 alter table wed_guests add column if not exists phone      text not null default '';
+alter table wed_guests add column if not exists age_group  text not null default 'adult';
 
 -- RLS: same pattern as the engagement site — no policies means the anon key
 -- gets nothing; only the service role (used server-side) can read/write.

@@ -1,3 +1,18 @@
+/**
+ * Set by hand in /admin, never by the guest. Children eat less; babies may not
+ * need a seat at all.
+ */
+export type AgeGroup = 'adult' | 'child' | 'baby';
+
+export const AGE_GROUPS: { id: AgeGroup; label: string }[] = [
+	{ id: 'adult', label: 'Adult' },
+	{ id: 'child', label: 'Child' },
+	{ id: 'baby', label: 'Baby' }
+];
+
+/** Anything unrecognised — an old row, a draft saved before this existed — reads as an adult. */
+export const toAgeGroup = (v: unknown): AgeGroup => (v === 'child' || v === 'baby' ? v : 'adult');
+
 export type Guest = {
 	id: string;
 	name: string;
@@ -11,6 +26,8 @@ export type Guest = {
 	last_name?: string;
 	email?: string;
 	phone?: string;
+	/** Admin-only, like the contact fields above. */
+	age_group?: AgeGroup;
 };
 
 /** The party's mailing address — required on the RSVP form, editable in /admin. */

@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { db, GUEST_COLS_FULL } from '$lib/server/supabase';
+import { db, GUEST_COLS_ADMIN } from '$lib/server/supabase';
 import { ADDRESS_COLS } from '$lib/server/party';
 import { isAdmin, login, logout, makeCode } from '$lib/server/admin';
 import { sendAllReminders } from '$lib/server/reminders';
@@ -9,7 +9,7 @@ import { sendBroadcast, type Audience, type BroadcastChannel } from '$lib/server
 import { smsEnabled } from '$lib/server/sms';
 import { siteUrl, siteUrlIsLocal } from '$lib/server/site';
 import { toE164 } from '$lib/phone';
-import type { Guest } from '$lib/types';
+import { toAgeGroup, type AgeGroup, type Guest } from '$lib/types';
 import { ADDRESS_FIELDS, type AdminPartyView } from './party-form';
 
 export const load: PageServerLoad = async ({ cookies }) => {
@@ -20,7 +20,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 		db()
 			.from('wed_parties')
 			.select(
-				`id, code, display_name, contact_email, contact_phone, notes, song_requests, message, ${ADDRESS_COLS}, invited_at, responded_at, reminded_at, wed_guests ( ${GUEST_COLS_FULL} )`
+				`id, code, display_name, contact_email, contact_phone, notes, song_requests, message, ${ADDRESS_COLS}, invited_at, responded_at, reminded_at, wed_guests ( ${GUEST_COLS_ADMIN} )`
 			)
 			.order('display_name'),
 		db()
@@ -59,6 +59,7 @@ type IncomingGuest = {
 	email: string;
 	phone: string;
 	is_plus_one: boolean;
+	age_group: AgeGroup;
 	sort_order: number;
 };
 
@@ -97,6 +98,7 @@ function readGuests(raw: string): IncomingGuest[] | null {
 				.slice(0, 120),
 			phone: canonPhone(g.phone),
 			is_plus_one: g.is_plus_one === true,
+			age_group: toAgeGroup(g.age_group),
 			sort_order: i
 		});
 	}

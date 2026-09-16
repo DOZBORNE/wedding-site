@@ -7,7 +7,7 @@
 	import ConfirmButton from './ConfirmButton.svelte';
 	import PhoneInput from '$lib/components/PhoneInput.svelte';
 	import { toE164 } from '$lib/phone';
-	import { blankAddress } from '$lib/types';
+	import { AGE_GROUPS, blankAddress, toAgeGroup } from '$lib/types';
 	import {
 		ADDRESS_FIELDS,
 		blankGuest,
@@ -55,6 +55,7 @@
 			email: g.email ?? '',
 			phone: g.phone ?? '',
 			is_plus_one: g.is_plus_one,
+			age_group: toAgeGroup(g.age_group),
 			attending: g.attending,
 			meal: g.meal,
 			dietary: g.dietary
@@ -67,6 +68,8 @@
 	if (!initial.guests.length) initial.guests.push(blankGuest());
 	// A draft saved before addresses existed won't have one — fill it in rather than crash.
 	if (!initial.address) initial.address = blankAddress();
+	// Same for a draft saved before age groups existed.
+	for (const g of initial.guests) g.age_group = toAgeGroup(g.age_group);
 	let model = $state<PartyDraft>(initial);
 
 	/** Phones are stored as +E.164 so Twilio never has to guess. */
@@ -81,7 +84,8 @@
 				name: g.name.trim(),
 				email: g.email.trim(),
 				phone: canonPhone(g.phone),
-				is_plus_one: g.is_plus_one
+				is_plus_one: g.is_plus_one,
+				age_group: g.age_group
 			}));
 	const snap = (m: PartyDraft) =>
 		JSON.stringify({
@@ -160,6 +164,7 @@
 				email: g.email ?? '',
 				phone: g.phone ?? '',
 				is_plus_one: g.is_plus_one,
+				age_group: toAgeGroup(g.age_group),
 				attending: g.attending,
 				meal: g.meal,
 				dietary: g.dietary
@@ -373,7 +378,7 @@
 
 		<div class="guests">
 			<div class="g-cols" aria-hidden="true">
-				<span>Guest</span><span>Email</span><span>Phone</span><span>+1</span><span></span>
+				<span>Guest</span><span>Email</span><span>Phone</span><span>Age</span><span>+1</span><span></span>
 			</div>
 			{#each model.guests as g, i (g)}
 				{@const err = rowError(g)}
@@ -405,6 +410,17 @@
 						onkeydown={(e) => rowEnter(e, i)}
 						onblur={() => touchRow(g, 'phone')}
 					/>
+					<select
+						class="g-age"
+						class:kid={g.age_group !== 'adult'}
+						aria-label="Age group"
+						title="Children eat less; babies may not need a seat"
+						bind:value={g.age_group}
+					>
+						{#each AGE_GROUPS as a (a.id)}
+							<option value={a.id}>{a.label}</option>
+						{/each}
+					</select>
 					<label class="g-plus" title="An open plus-one seat — the guest fills in the name">
 						<input type="checkbox" bind:checked={g.is_plus_one} />
 						<span>+1</span>
@@ -722,7 +738,7 @@
 	.g-cols,
 	.g-row {
 		display: grid;
-		grid-template-columns: 1.5fr 1.5fr 1fr auto 1.8rem;
+		grid-template-columns: 1.5fr 1.5fr 1fr 5.2rem auto 1.8rem;
 		gap: 0.3rem 0.55rem;
 		align-items: center;
 	}
@@ -732,6 +748,22 @@
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		color: var(--ink-label);
+	}
+	.g-age {
+		width: 100%;
+		min-width: 0;
+		font: inherit;
+		font-size: 0.85rem;
+		color: var(--ink-muted);
+		background: var(--field-bg, rgba(255, 253, 247, 0.6));
+		border: 1px solid rgba(58, 36, 32, 0.3);
+		padding: 0.4rem 0.3rem;
+		cursor: pointer;
+	}
+	.g-age.kid {
+		color: var(--chocolate);
+		font-weight: 600;
+		border-color: var(--claret);
 	}
 	.g-plus {
 		display: inline-flex;

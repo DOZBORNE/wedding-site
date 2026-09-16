@@ -1,4 +1,4 @@
-import { blankAddress, type Guest, type PartyAddress } from '$lib/types';
+import { blankAddress, type AgeGroup, type Guest, type PartyAddress } from '$lib/types';
 import { toE164 } from '$lib/phone';
 
 /** A party as the admin page sees it — full contact info, RSVP state, timestamps. */
@@ -50,6 +50,8 @@ export type GuestDraft = {
 	email: string;
 	phone: string;
 	is_plus_one: boolean;
+	/** Set by hand — children eat less, babies may not need a seat. */
+	age_group: AgeGroup;
 	/** RSVP state carried along for display in the editor — never edited there. */
 	attending?: boolean | null;
 	meal?: string;
@@ -67,7 +69,13 @@ export type PartyDraft = {
 	guests: GuestDraft[];
 };
 
-export const blankGuest = (): GuestDraft => ({ name: '', email: '', phone: '', is_plus_one: false });
+export const blankGuest = (): GuestDraft => ({
+	name: '',
+	email: '',
+	phone: '',
+	is_plus_one: false,
+	age_group: 'adult'
+});
 
 export const blankParty = (key: string): PartyDraft => ({
 	key,

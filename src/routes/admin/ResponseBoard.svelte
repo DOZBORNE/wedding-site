@@ -84,6 +84,16 @@
 	<button
 		class="key wrote"
 		type="button"
+		onclick={() => onOpen('kids')}
+		aria-label={compact ? `${ledger.kids.length} children and babies — open the list` : undefined}
+	>
+		<span class="ring" aria-hidden="true"></span>
+		<b>{ledger.kids.length}</b>
+		<span class="key-label">{ledger.kids.length === 1 ? 'kid' : 'kids'}</span>
+	</button>
+	<button
+		class="key wrote"
+		type="button"
 		onclick={() => onOpen('songs')}
 		aria-label={compact ? `${ledger.songs.length} song requests — open the list` : undefined}
 	>
@@ -307,6 +317,14 @@
 		font-size: 0.95rem;
 		align-self: center;
 	}
+	/* A smaller seat — the kids key is a count of people, not something they wrote. */
+	.ring {
+		width: 7px;
+		height: 7px;
+		border: 1px solid var(--candle);
+		border-radius: 50%;
+		align-self: center;
+	}
 	.glyph.quote {
 		font-family: var(--display);
 		font-size: 1.3rem;
@@ -398,7 +416,7 @@
 		color: var(--ink-faint);
 	}
 
-	/* Five labelled keys won't fit a phone in one line. The rail keeps the numbers
+	/* Six labelled keys won't fit a phone in one line. The rail keeps the numbers
 	   and their colour, which the board directly above has already taught. */
 	@media (max-width: 700px) {
 		.keys.compact {
