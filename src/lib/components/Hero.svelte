@@ -42,6 +42,7 @@
 		{#if daysLeft > 0}
 			<div class="count"><i>{daysLeft} days to go</i></div>
 		{/if}
+		<div class="time">Ceremony · {WEDDING.ceremonyTime}</div>
 		<div class="quick">
 			<a class="quick-rsvp" href="/#rsvp">RSVP</a>
 			<a class="quick-reg" href={REGISTRY_URL} target="_blank" rel="noopener">
@@ -139,7 +140,8 @@
 		animation: soft-rise 1s ease 0.95s both;
 	}
 	.place,
-	.count {
+	.count,
+	.time {
 		animation: soft-rise 1s ease 1.15s both;
 	}
 	.quick {
@@ -297,5 +299,13 @@
 		color: var(--blush);
 		font-size: 1.05rem;
 		margin-top: 0.3rem;
+	}
+	.time {
+		font-size: 0.72rem;
+		letter-spacing: 0.3em;
+		text-indent: 0.3em;
+		text-transform: uppercase;
+		color: var(--ink-muted);
+		margin-top: -0.4rem;
 	}
 </style>
