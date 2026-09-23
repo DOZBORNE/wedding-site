@@ -19,9 +19,9 @@ export const WEDDING = {
   dateShort: "11 · 06 · 2026",
   ceremonyTime: "Four in the afternoon",
   receptionTime: "Reception to Follow",
-  rsvpDeadlineLabel: "September 28, 2026",
+  rsvpDeadlineLabel: "October 3, 2026",
   /** Enforced server-side: RSVPs lock after end of this day (America/Chicago). Keep in sync with the label above. */
-  rsvpDeadlineISO: "2026-09-28T23:59:59-05:00",
+  rsvpDeadlineISO: "2026-10-03T23:59:59-05:00",
 };
 
 export const VENUE = {
