@@ -7,7 +7,7 @@
 	import ConfirmButton from './ConfirmButton.svelte';
 	import PhoneInput from '$lib/components/PhoneInput.svelte';
 	import { toE164 } from '$lib/phone';
-	import { AGE_GROUPS, blankAddress, toAgeGroup } from '$lib/types';
+	import { AGE_GROUPS, addressIsComplete, blankAddress, toAgeGroup } from '$lib/types';
 	import {
 		ADDRESS_FIELDS,
 		blankGuest,
@@ -304,6 +304,97 @@
 			};
 		};
 
+	// ── recording a reply by hand ───────────────────────────────────────────
+	// For a household that called or texted their answer. Works off the stored
+	// party, like the sends above — a guest typed in a moment ago isn't on it yet.
+	type ReplyRow = { id: string; label: string; is_plus_one: boolean; attending: boolean; dietary: string; name: string };
+	let replyOpen = $state(false);
+	let replyRows = $state<ReplyRow[]>([]);
+	let replyAddress = $state(blankAddress());
+	let replySongs = $state('');
+	let replyError = $state('');
+	let recording = $state<'' | 'yes' | 'no'>('');
+
+	function openYes() {
+		if (!party) return;
+		replyRows = party.guests.map((g) => ({
+			id: g.id,
+			label: g.name || 'Plus-one',
+			is_plus_one: g.is_plus_one,
+			// plus-one seats start unticked, as on the guest form — tick one if they're bringing someone
+			attending: g.attending ?? !g.is_plus_one,
+			dietary: g.dietary ?? '',
+			name: g.name
+		}));
+		replyAddress = pickAddress(party);
+		replySongs = party.song_requests ?? '';
+		replyError = '';
+		openedFor = storedGuestIds;
+		replyOpen = true;
+	}
+
+	// The panel is a snapshot of the stored guest list — if a save changes who's
+	// in the party, close it rather than record a reply that misses someone.
+	const storedGuestIds = $derived(party ? party.guests.map((g) => g.id).join() : '');
+	let openedFor = '';
+	$effect(() => {
+		if (replyOpen && storedGuestIds !== openedFor) replyOpen = false;
+	});
+
+	const replyJson = $derived(
+		JSON.stringify(
+			replyRows.map((r) => ({
+				id: r.id,
+				attending: r.attending,
+				dietary: r.dietary,
+				...(r.is_plus_one ? { name: r.name } : {})
+			}))
+		)
+	);
+
+	const handleRecord =
+		(answer: 'yes' | 'no'): SubmitFunction =>
+		({ cancel }) => {
+			replyError = '';
+			if (answer === 'yes') {
+				if (!replyRows.some((r) => r.attending)) {
+					replyError = 'Tick at least one guest as coming — or record a no.';
+					return cancel();
+				}
+				if (replyRows.some((r) => r.attending && r.is_plus_one && !r.name.trim())) {
+					replyError = 'Give the plus-one a name.';
+					return cancel();
+				}
+				if (!addressIsComplete(replyAddress)) {
+					replyError = 'Fill in the street, city, state, and ZIP.';
+					return cancel();
+				}
+			}
+			recording = answer;
+			return async ({ result }) => {
+				recording = '';
+				if (result.type === 'success') {
+					replyOpen = false;
+					notify(
+						`Recorded ${model.display_name.trim() || 'the party'} as ${answer === 'yes' ? 'coming' : 'not coming'}.`
+					);
+					await invalidateAll();
+					// recording is blocked while there are unsaved edits, so nothing is lost here
+					if (party) {
+						model = fromParty(party);
+						baseline = snap(model);
+					}
+				} else if (result.type === 'failure') {
+					const msg =
+						(result.data as { rsvpError?: string } | undefined)?.rsvpError ?? 'The reply was not saved.';
+					if (answer === 'yes') replyError = msg;
+					else notify(msg, 'err');
+				} else {
+					notify('Connection trouble — the reply was not saved.', 'err');
+				}
+			};
+		};
+
 	const handleDelete: SubmitFunction = () => {
 		deleting = true;
 		return async ({ result }) => {
@@ -523,6 +614,114 @@
 	</form>
 
 	{#if party}
+		<div class="record">
+			<div class="send-row">
+				<span class="tail-label">Record RSVP</span>
+				<button
+					type="button"
+					class="mini-btn"
+					onclick={() => (replyOpen ? (replyOpen = false) : openYes())}
+					disabled={!!recording || (dirty && !replyOpen)}
+				>
+					{replyOpen ? 'Close' : 'Yes…'}
+				</button>
+				<form method="POST" action="?/recordRsvp" use:enhance={handleRecord('no')}>
+					<input type="hidden" name="id" value={party.id} />
+					<input type="hidden" name="answer" value="no" />
+					<ConfirmButton
+						label="No"
+						confirmLabel="Yes, record no"
+						message="Marks everyone in the party as not coming."
+						kind="quiet"
+						confirmKind="primary"
+						small
+						busy={recording === 'no'}
+						busyLabel="Saving…"
+						disabled={!!recording || dirty}
+					/>
+				</form>
+				<span class="tail-note">
+					{#if dirty}Save or discard your edits first — a save afterwards would undo the reply.{:else if party.responded_at}Already replied — this overwrites it.{:else}For a reply that came by phone or text.{/if}
+				</span>
+			</div>
+
+			{#if replyOpen}
+				<form
+					method="POST"
+					action="?/recordRsvp"
+					use:enhance={handleRecord('yes')}
+					class="reply"
+					novalidate
+				>
+					<input type="hidden" name="id" value={party.id} />
+					<input type="hidden" name="answer" value="yes" />
+					<input type="hidden" name="guests_json" value={replyJson} />
+
+					<div class="reply-guests">
+						{#each replyRows as r (r.id)}
+							<div class="r-row">
+								<label class="g-plus">
+									<input type="checkbox" bind:checked={r.attending} />
+									<span>Coming</span>
+								</label>
+								{#if r.is_plus_one}
+									<input aria-label="Plus-one name" placeholder="Plus-one’s name" bind:value={r.name} disabled={!r.attending} />
+								{:else}
+									<span class="r-name" class:out={!r.attending}>{r.label}</span>
+								{/if}
+								<input
+									aria-label="Dietary needs"
+									placeholder="Dietary needs (optional)"
+									bind:value={r.dietary}
+									disabled={!r.attending}
+								/>
+							</div>
+						{/each}
+					</div>
+
+					<div class="addr-grid">
+						<label class="f wide">
+							<span>Street</span>
+							<input name="address_line1" bind:value={replyAddress.address_line1} />
+						</label>
+						<label class="f wide">
+							<span>Apt / suite</span>
+							<input name="address_line2" bind:value={replyAddress.address_line2} />
+						</label>
+						<label class="f">
+							<span>City</span>
+							<input name="city" bind:value={replyAddress.city} />
+						</label>
+						<label class="f">
+							<span>State</span>
+							<input name="state_region" bind:value={replyAddress.state_region} />
+						</label>
+						<label class="f">
+							<span>ZIP</span>
+							<input name="postal_code" bind:value={replyAddress.postal_code} />
+						</label>
+						<label class="f">
+							<span>Country</span>
+							<input name="country" bind:value={replyAddress.country} placeholder="United States" />
+						</label>
+					</div>
+
+					<label class="f">
+						<span>Song requests</span>
+						<input name="song_requests" bind:value={replySongs} placeholder="Optional" />
+					</label>
+
+					{#if replyError}<p class="form-err" role="alert">{replyError}</p>{/if}
+
+					<div class="foot">
+						<button class="save-btn" type="submit" disabled={!!recording || dirty}>
+							{recording === 'yes' ? 'Saving…' : 'Record yes'}
+						</button>
+					</div>
+				</form>
+			{/if}
+		</div>
+
 		<div class="tail">
 			<!-- Sending to one household — a resend for a bounced address, or the first
 			     copy for a party added after the batch went out. Deliberately quiet:
@@ -898,7 +1097,46 @@
 		color: var(--ink-faint);
 	}
 
+	/* Recording a reply by hand — sits between the save button and the sends. */
+	.record {
+		display: grid;
+		gap: 0.8rem;
+		border-top: 1px solid rgba(58, 36, 32, 0.22);
+		padding-top: 0.9rem;
+	}
+	.reply {
+		border: 1px solid rgba(58, 36, 32, 0.28);
+		padding: 0.8rem;
+		background: rgba(255, 253, 247, 0.28);
+	}
+	.reply-guests {
+		display: grid;
+		gap: 0.45rem;
+	}
+	.r-row {
+		display: grid;
+		grid-template-columns: auto 1.2fr 1.5fr;
+		gap: 0.55rem;
+		align-items: center;
+	}
+	.r-name {
+		font-weight: 600;
+	}
+	.r-name.out {
+		color: var(--ink-faint);
+		text-decoration: line-through;
+	}
+	.r-row input:disabled {
+		opacity: 0.45;
+	}
+
 	@media (max-width: 760px) {
+		.r-row {
+			grid-template-columns: auto 1fr;
+		}
+		.r-row input[aria-label='Dietary needs'] {
+			grid-column: 1 / -1;
+		}
 		.top-grid {
 			grid-template-columns: 1fr;
 		}

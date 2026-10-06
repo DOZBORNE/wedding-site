@@ -216,6 +216,101 @@ export const actions: Actions = {
 		return { saved: true };
 	},
 
+	/**
+	 * Record a reply on a party's behalf — someone who called or texted instead
+	 * of using the site. "No" marks the whole household as declining and leaves
+	 * everything else as it is (blank, if nothing was ever filled in). "Yes"
+	 * carries the same details the guest form asks for. No confirmation email:
+	 * the guest didn't press anything.
+	 */
+	recordRsvp: async ({ request, cookies }) => {
+		if (!isAdmin(cookies)) return fail(403, { rsvpError: 'Not signed in.' });
+		const form = await request.formData();
+		const id = String(form.get('id') ?? '').trim();
+		const answer = form.get('answer') === 'yes' ? 'yes' : 'no';
+		if (!id) return fail(400, { rsvpError: 'Save the party first.' });
+
+		const { data: stored, error: readError } = await db()
+			.from('wed_guests')
+			.select('id, is_plus_one')
+			.eq('party_id', id);
+		if (readError) return fail(500, { rsvpError: readError.message });
+		if (!stored?.length) return fail(400, { rsvpError: 'This party has no guests.' });
+
+		if (answer === 'no') {
+			const { error } = await db()
+				.from('wed_guests')
+				.update({ attending: false, meal: '', dietary: '' })
+				.eq('party_id', id);
+			if (error) return fail(500, { rsvpError: error.message });
+			const { error: partyError } = await db()
+				.from('wed_parties')
+				.update({ responded_at: new Date().toISOString() })
+				.eq('id', id);
+			if (partyError) return fail(500, { rsvpError: partyError.message });
+			return { rsvpRecorded: 'no' as const };
+		}
+
+		let replies: { id: string; attending: boolean; dietary: string; name?: string }[];
+		try {
+			const parsed = JSON.parse(String(form.get('guests_json') ?? ''));
+			if (!Array.isArray(parsed)) throw new Error();
+			replies = parsed.map((r: Record<string, unknown>) => ({
+				id: String(r.id ?? ''),
+				attending: r.attending === true,
+				dietary: String(r.dietary ?? '')
+					.trim()
+					.slice(0, 500),
+				name: typeof r.name === 'string' ? r.name.trim().slice(0, 80) : undefined
+			}));
+		} catch {
+			return fail(400, { rsvpError: 'The reply could not be read — reload and try again.' });
+		}
+		const own = new Map(stored.map((g) => [g.id as string, g.is_plus_one as boolean]));
+		replies = replies.filter((r) => own.has(r.id));
+		if (!replies.some((r) => r.attending)) {
+			return fail(400, { rsvpError: 'Tick at least one guest as coming — or record a no.' });
+		}
+
+		const address = Object.fromEntries(
+			ADDRESS_FIELDS.map((f) => [
+				f,
+				String(form.get(f) ?? '')
+					.trim()
+					.slice(0, 200)
+			])
+		);
+		if (!address.address_line1 || !address.city || !address.state_region || !address.postal_code) {
+			return fail(400, { rsvpError: 'Fill in the street, city, state, and ZIP.' });
+		}
+
+		for (const r of replies) {
+			const patch: Record<string, unknown> = {
+				attending: r.attending,
+				meal: '',
+				dietary: r.attending ? r.dietary : ''
+			};
+			// a declined plus-one keeps whatever name it already had, as on the guest form
+			if (own.get(r.id) && r.attending && r.name !== undefined) patch.name = r.name;
+			const { error } = await db().from('wed_guests').update(patch).eq('id', r.id).eq('party_id', id);
+			if (error) return fail(500, { rsvpError: error.message });
+		}
+
+		const { error: partyError } = await db()
+			.from('wed_parties')
+			.update({
+				responded_at: new Date().toISOString(),
+				song_requests: String(form.get('song_requests') ?? '')
+					.trim()
+					.slice(0, 500),
+				...address,
+				country: address.country || 'United States'
+			})
+			.eq('id', id);
+		if (partyError) return fail(500, { rsvpError: partyError.message });
+		return { rsvpRecorded: 'yes' as const };
+	},
+
 	deleteParty: async ({ request, cookies }) => {
 		if (!isAdmin(cookies)) return fail(403, { partyError: 'Not signed in.' });
 		const form = await request.formData();
