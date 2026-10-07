@@ -4,13 +4,18 @@
 	import Column from './Column.svelte';
 	import Icon from './Icon.svelte';
 
-	const target = new Date(WEDDING.dateISO).getTime();
-	let daysLeft = $state(Math.max(0, Math.ceil((target - Date.now()) / 86_400_000)));
+	const [wy, wm, wd] = WEDDING.dateISO.slice(0, 10).split('-').map(Number);
+	const weddingDay = Date.UTC(wy, wm - 1, wd) / 86_400_000;
+	const countDays = () => {
+		const now = new Date();
+		const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86_400_000;
+		return Math.max(0, weddingDay - today);
+	};
+
+	let daysLeft = $state(countDays());
 	$effect(() => {
-		const t = setInterval(
-			() => (daysLeft = Math.max(0, Math.ceil((target - Date.now()) / 86_400_000))),
-			60_000
-		);
+		daysLeft = countDays();
+		const t = setInterval(() => (daysLeft = countDays()), 60_000);
 		return () => clearInterval(t);
 	});
 </script>
