@@ -26,8 +26,11 @@
 		seatedGuestReach
 	} from '$lib/pavilion/spacing';
 	import { surfaceAt } from '$lib/pavilion/venue';
-	import type { PlanItem, SavedPlan, SpacingRule } from '$lib/pavilion/types';
+	import type { PlanItem, SavedPlan, SeatingChart, SpacingRule } from '$lib/pavilion/types';
 	import PlanCanvas from './PlanCanvas.svelte';
+	import GuestSeating from './GuestSeating.svelte';
+	import { page } from '$app/state';
+	import { replaceState } from '$app/navigation';
 	import '@fontsource/archivo/400.css';
 	import '@fontsource/archivo/500.css';
 	import '@fontsource/archivo/600.css';
@@ -36,6 +39,17 @@
 	import './seating.css';
 
 	let { data }: { data: PageData } = $props();
+
+	/** Layout arranges the furniture; Guests seats people at it. Kept in the URL so a link opens the right one. */
+	let mode = $state<'layout' | 'guests'>(page.url.searchParams.get('view') === 'guests' ? 'guests' : 'layout');
+
+	function switchMode(next: 'layout' | 'guests') {
+		mode = next;
+		const url = new URL(page.url);
+		if (next === 'guests') url.searchParams.set('view', 'guests');
+		else url.searchParams.delete('view');
+		replaceState(url, {});
+	}
 
 	const WORKING_KEY = 'aldridge.pavilion.working.v3';
 	const NUDGE_FEET = 0.5;
@@ -48,6 +62,7 @@
 	// Seeded once from the loader, then owned locally so a save or delete shows up
 	// without a round trip.
 	let savedPlans = $state<SavedPlan[]>(untrack(() => data.plans));
+	let seatingCharts = $state<SeatingChart[]>(untrack(() => data.charts));
 	let planName = $state('');
 	let saving = $state(false);
 	let toast = $state('');
@@ -203,6 +218,7 @@
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
+		if (mode !== 'layout') return;
 		const target = event.target as HTMLElement | null;
 		if (target?.matches('input, textarea, select')) return;
 		const meta = event.metaKey || event.ctrlKey;
@@ -350,6 +366,13 @@
 	}
 
 	async function deletePlan(plan: SavedPlan) {
+		const seatedOn = seatingCharts.filter((chart) => chart.planId === plan.id);
+		if (seatedOn.length) {
+			showToast(
+				`${seatedOn.length === 1 ? `Seating chart “${seatedOn[0].name}” uses` : `${seatedOn.length} seating charts use`} this layout — delete ${seatedOn.length === 1 ? 'it' : 'them'} first`
+			);
+			return;
+		}
 		const response = await fetch(`/api/seating?id=${encodeURIComponent(plan.id)}`, {
 			method: 'DELETE'
 		});
@@ -384,12 +407,35 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="seating-workspace">
-	<aside class="rail">
-		<div class="masthead">
-			<h1>Aldridge Pavilion Seating</h1>
-			<p class="occasion">Osborne · Connally — 6 Nov 2026</p>
+{#snippet masthead()}
+	<div class="masthead">
+		<h1>Aldridge Pavilion Seating</h1>
+		<p class="occasion">Osborne · Connally — 6 Nov 2026</p>
+		<div class="mode-switch" role="tablist" aria-label="What to work on">
+			<button type="button" role="tab" aria-selected={mode === 'layout'} class:active={mode === 'layout'} onclick={() => switchMode('layout')}>
+				Tables
+			</button>
+			<button type="button" role="tab" aria-selected={mode === 'guests'} class:active={mode === 'guests'} onclick={() => switchMode('guests')}>
+				Guests
+			</button>
 		</div>
+	</div>
+{/snippet}
+
+<div class="seating-workspace">
+	{#if mode === 'guests'}
+		<GuestSeating
+			plans={savedPlans}
+			bind:charts={seatingCharts}
+			guests={data.guests}
+			canDelete={data.canDelete}
+			chartsUnavailable={data.chartsUnavailable}
+			guestsUnavailable={data.guestsUnavailable}
+			{masthead}
+		/>
+	{:else}
+	<aside class="rail">
+		{@render masthead()}
 
 		<div class="rail-scroll">
 			<section class="section">
@@ -692,4 +738,5 @@
 			</div>
 		</div>
 	</main>
+	{/if}
 </div>

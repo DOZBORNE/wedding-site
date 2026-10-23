@@ -1038,6 +1038,625 @@
 	}
 }
 
+/* ---------- Guests: seating people at the tables ---------- */
+
+/*
+ * Each party carries one hue (--hue, from its id) everywhere it appears: the
+ * swatch in the list, its chairs on the plan, its rows in a table's drawer.
+ * A family split across two tables reads as the same colour in both places.
+ */
+.seating-workspace {
+	--party-l: 70%;
+	--party-c: 0.12;
+	--party-wash-l: 94%;
+}
+
+@media (prefers-color-scheme: dark) {
+	.seating-workspace {
+		--party-l: 62%;
+		--party-wash-l: 28%;
+	}
+}
+
+/* Resolved where --hue is set, so each party computes its own colour. */
+.seating-workspace [style*='--hue'] {
+	--party: oklch(var(--party-l) var(--party-c) var(--hue));
+	--party-wash: oklch(var(--party-wash-l) 0.04 var(--hue));
+}
+
+.seating-workspace select,
+.seating-workspace textarea {
+	font: inherit;
+	color: inherit;
+}
+
+.seating-workspace select.field {
+	appearance: none;
+	padding-right: 28px;
+	background-image: linear-gradient(45deg, transparent 50%, var(--ink-faint) 50%),
+		linear-gradient(135deg, var(--ink-faint) 50%, transparent 50%);
+	background-position:
+		right 13px center,
+		right 8px center;
+	background-size: 5px 5px;
+	background-repeat: no-repeat;
+	cursor: pointer;
+}
+
+.seating-workspace .mode-switch,
+.seating-workspace .segmented {
+	display: flex;
+	padding: 2px;
+	border: 1px solid var(--rule);
+	border-radius: 6px;
+	background: var(--paper-sunk);
+}
+
+.seating-workspace .mode-switch {
+	margin-top: 14px;
+}
+
+.seating-workspace .mode-switch button,
+.seating-workspace .segmented button {
+	flex: 1;
+	padding: 6px 8px;
+	border: none;
+	border-radius: 4px;
+	background: none;
+	font-size: 12.5px;
+	font-weight: 500;
+	color: var(--ink-soft);
+	cursor: pointer;
+}
+
+.seating-workspace .mode-switch button.active,
+.seating-workspace .segmented button.active {
+	background: var(--paper-raised);
+	color: var(--ink);
+	box-shadow: 0 1px 2px rgb(28 38 32 / 14%);
+}
+
+.seating-workspace .segmented .count {
+	margin-left: 3px;
+	font-family: var(--font-drafting);
+	font-size: 11px;
+	color: var(--ink-faint);
+}
+
+.seating-workspace .chart-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.seating-workspace .chart-picker {
+	flex: 1;
+	min-width: 0;
+	font-weight: 600;
+}
+
+.seating-workspace .save-state {
+	flex: none;
+	font-size: 11px;
+	color: var(--ink-faint);
+	white-space: nowrap;
+}
+
+.seating-workspace .save-state.pending,
+.seating-workspace .save-state.saving {
+	color: var(--ink-soft);
+}
+
+.seating-workspace .save-state.conflict,
+.seating-workspace .save-state.error {
+	color: var(--alert);
+	font-weight: 600;
+}
+
+.seating-workspace .chart-plan {
+	margin: 0;
+	font-size: 12px;
+	color: var(--ink-soft);
+}
+
+.seating-workspace .chart-plan b {
+	font-weight: 600;
+	color: var(--ink);
+}
+
+.seating-workspace .off-plan {
+	color: var(--brass);
+}
+
+.seating-workspace .conflict-banner {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 10px 11px;
+	border-left: 2px solid var(--alert);
+	border-radius: 0 3px 3px 0;
+	background: var(--alert-wash);
+	font-size: 12.5px;
+}
+
+.seating-workspace .conflict-banner p {
+	margin: 0;
+}
+
+.seating-workspace .button.danger.armed,
+.seating-workspace .button.danger:hover {
+	border-color: var(--alert);
+	background: var(--alert-wash);
+	color: var(--alert);
+}
+
+.seating-workspace .derived.warn {
+	border-left-color: var(--alert);
+	background: var(--alert-wash);
+}
+
+.seating-workspace .tally dd small {
+	font-size: 12px;
+	color: var(--ink-faint);
+}
+
+.seating-workspace .link {
+	padding: 0;
+	border: none;
+	background: none;
+	font: inherit;
+	font-weight: 600;
+	color: var(--accent-deep);
+	text-align: left;
+	text-decoration: underline;
+	text-decoration-color: var(--accent-veil);
+	text-underline-offset: 2px;
+	cursor: pointer;
+}
+
+.seating-workspace .empty-note code {
+	font-family: var(--font-drafting);
+	font-size: 11px;
+}
+
+/* The list of parties */
+
+.seating-workspace .guest-list {
+	margin: -6px;
+	padding: 6px;
+	border: 1px dashed transparent;
+	border-radius: 6px;
+}
+
+.seating-workspace .guest-list.drop-hover {
+	border-color: var(--accent);
+	background: var(--accent-wash);
+}
+
+.seating-workspace .placing-note {
+	margin: 0;
+	padding: 8px 10px;
+	border-radius: 4px;
+	background: var(--ink);
+	color: var(--paper);
+	font-size: 12px;
+}
+
+.seating-workspace .placing-note .link {
+	margin-left: 4px;
+	color: inherit;
+	text-decoration-color: currentcolor;
+}
+
+.seating-workspace .party-list {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.seating-workspace .party {
+	border: 1px solid var(--rule);
+	border-left: 3px solid var(--party);
+	border-radius: 4px;
+	background: var(--paper);
+	cursor: grab;
+}
+
+.seating-workspace .party.pending {
+	border-color: var(--party);
+	background: var(--party-wash);
+	box-shadow: inset 0 0 0 1px var(--party);
+}
+
+.seating-workspace .party-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 7px 9px 7px 8px;
+	border: none;
+	background: none;
+	text-align: left;
+	cursor: inherit;
+}
+
+.seating-workspace .party-swatch {
+	flex: none;
+	width: 9px;
+	height: 9px;
+	border-radius: 2px;
+	background: var(--party);
+}
+
+.seating-workspace .party-name {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	font-size: 12.5px;
+	font-weight: 600;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.seating-workspace .party-need {
+	font-family: var(--font-drafting);
+	font-size: 11px;
+	font-variant-numeric: tabular-nums;
+	color: var(--ink-faint);
+}
+
+.seating-workspace .party-members {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 3px;
+	padding: 0 8px 8px;
+}
+
+.seating-workspace .member {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 4px;
+	padding: 2px 7px;
+	border: 1px solid var(--rule);
+	border-radius: 999px;
+	background: var(--paper-raised);
+	font-size: 11.5px;
+	cursor: grab;
+}
+
+.seating-workspace .member:hover,
+.seating-workspace .member.pending {
+	border-color: var(--party);
+	background: var(--party-wash);
+}
+
+.seating-workspace .member.lap {
+	border-style: dashed;
+}
+
+.seating-workspace .member .age {
+	font-size: 10px;
+	color: var(--brass);
+}
+
+.seating-workspace .member .at {
+	font-family: var(--font-drafting);
+	font-size: 10px;
+	color: var(--accent-deep);
+}
+
+.seating-workspace .split-list {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	font-size: 12px;
+}
+
+.seating-workspace .split-list li {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+}
+
+.seating-workspace .split-list li > span:nth-child(2) {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.seating-workspace .at-list {
+	font-family: var(--font-drafting);
+	font-size: 11px;
+	color: var(--ink-soft);
+}
+
+/* Tables on the plan */
+
+.seating-workspace .seating-plan .scenery {
+	cursor: default;
+	opacity: 0.75;
+}
+
+.seating-workspace .seat-table {
+	cursor: pointer;
+	outline: none;
+	transition: opacity 0.15s;
+}
+
+.seating-workspace .seating-plan.placing .seat-table {
+	cursor: copy;
+}
+
+.seating-workspace .seat-table.dimmed {
+	opacity: 0.35;
+}
+
+.seating-workspace .seat-hit {
+	fill: transparent;
+	pointer-events: all;
+}
+
+.seating-workspace .drop-ring {
+	fill: none;
+	stroke: none;
+	pointer-events: none;
+}
+
+.seating-workspace .seat-table:hover .drop-ring,
+.seating-workspace .seat-table:focus-visible .drop-ring {
+	fill: var(--accent-veil);
+}
+
+.seating-workspace .seat-table.selected .drop-ring {
+	fill: var(--accent-veil);
+	stroke: var(--accent);
+	stroke-width: 0.25;
+	stroke-dasharray: 1.2 0.8;
+}
+
+.seating-workspace .seat-table.drop-hover .drop-ring {
+	fill: var(--accent-veil);
+	stroke: var(--accent);
+	stroke-width: 0.35;
+	stroke-dasharray: none;
+}
+
+.seating-workspace .seat-chair {
+	fill: var(--paper-raised);
+	stroke: var(--ink-faint);
+	stroke-width: 0.11;
+	stroke-dasharray: 0.3 0.25;
+}
+
+.seating-workspace .seat-chair.taken {
+	fill: var(--party);
+	stroke: var(--paper-raised);
+	stroke-width: 0.14;
+	stroke-dasharray: none;
+}
+
+.seating-workspace .seat-chair.focus {
+	stroke: var(--ink);
+	stroke-width: 0.26;
+}
+
+.seating-workspace .seat-chair.extra {
+	stroke: var(--alert);
+	stroke-width: 0.3;
+	stroke-dasharray: none;
+}
+
+.seating-workspace .seat-top {
+	fill: var(--paper-raised);
+	stroke: var(--accent);
+	stroke-width: 0.3;
+}
+
+.seating-workspace .seat-table.full .seat-top {
+	fill: var(--accent-wash);
+}
+
+.seating-workspace .seat-table.over .seat-top,
+.seating-workspace .seat-table.gone .seat-top {
+	fill: var(--alert-wash);
+	stroke: var(--alert);
+}
+
+.seating-workspace .seat-number,
+.seating-workspace .seat-count {
+	font-family: var(--font-drafting);
+	text-anchor: middle;
+	pointer-events: none;
+}
+
+.seating-workspace .seat-number {
+	font-size: 2.1px;
+	font-weight: 500;
+	fill: var(--accent-deep);
+}
+
+.seating-workspace .seat-count {
+	font-size: 1.15px;
+	fill: var(--ink-soft);
+	font-variant-numeric: tabular-nums;
+}
+
+.seating-workspace .seat-count.lap {
+	font-size: 0.8px;
+	fill: var(--brass);
+}
+
+.seating-workspace .seat-table.over .seat-number,
+.seating-workspace .seat-table.over .seat-count {
+	fill: var(--alert);
+}
+
+/* The table drawer */
+
+.seating-workspace .stage-note {
+	padding: 40px;
+	text-align: center;
+}
+
+/* Make room beside the plan rather than covering the tables nearest the patio. */
+.seating-workspace .plan-holder.with-drawer {
+	padding-right: calc(min(340px, 40%) + 40px);
+}
+
+.seating-workspace .table-drawer {
+	position: absolute;
+	top: 18px;
+	right: 22px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	width: min(340px, 40%);
+	max-height: calc(100% - 44px);
+	padding: 12px;
+	overflow-y: auto;
+	border: 1px solid var(--rule);
+	border-radius: 7px;
+	background: var(--paper-raised);
+	box-shadow: var(--shadow-lift);
+}
+
+.seating-workspace .drawer-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.seating-workspace .drawer-number {
+	flex: none;
+	display: grid;
+	place-items: center;
+	width: 34px;
+	height: 34px;
+	border: 1.5px solid var(--accent);
+	border-radius: 50%;
+	font-family: var(--font-drafting);
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--accent-deep);
+}
+
+.seating-workspace .drawer-head .field {
+	flex: 1;
+	min-width: 0;
+	font-weight: 600;
+}
+
+.seating-workspace .drawer-meta {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.seating-workspace .drawer-note {
+	font-size: 11.5px;
+	color: var(--ink-faint);
+}
+
+.seating-workspace .seat-roster {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.seating-workspace .seat-roster li {
+	display: grid;
+	grid-template-columns: auto 1fr auto auto;
+	align-items: center;
+	gap: 8px;
+	padding: 5px 4px 5px 8px;
+	border-radius: 4px;
+	cursor: grab;
+}
+
+.seating-workspace .seat-roster li:hover {
+	background: var(--party-wash);
+}
+
+.seating-workspace .seat-roster li.gone .roster-name {
+	color: var(--alert);
+	text-decoration: line-through;
+}
+
+.seating-workspace .roster-name {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	font-size: 12.5px;
+	font-weight: 500;
+}
+
+.seating-workspace .roster-name small {
+	overflow: hidden;
+	font-size: 11px;
+	font-weight: 400;
+	color: var(--ink-faint);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.seating-workspace .lap-toggle {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 11px;
+	color: var(--ink-soft);
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.seating-workspace .lap-toggle input {
+	margin: 0;
+	accent-color: var(--accent);
+}
+
+.seating-workspace .roster-actions {
+	display: flex;
+}
+
+.seating-workspace .roster-actions .icon-button {
+	padding: 3px 5px;
+}
+
+.seating-workspace .roster-actions .icon-button:disabled {
+	opacity: 0.3;
+	cursor: default;
+}
+
+.seating-workspace .drawer-foot {
+	display: flex;
+	gap: 6px;
+	padding-top: 10px;
+	border-top: 1px solid var(--rule);
+}
+
+.seating-workspace .drawer-foot .field {
+	flex: 1;
+	min-width: 0;
+}
+
+.seating-workspace .drawer-foot .button {
+	flex: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.seating-workspace .seat-table {
+		transition: none;
+	}
+}
+
 /* ---------- Narrow screens ---------- */
 
 @media (width <= 900px) {
@@ -1067,5 +1686,23 @@
 
 	.seating-workspace .inspector {
 		bottom: 10px;
+	}
+
+	.seating-workspace .plan-holder.with-drawer {
+		padding-right: 14px;
+	}
+
+	/* Keep the plan within a thumb's reach of the list when placing by tap. */
+	.seating-workspace .party-list {
+		max-height: 46vh;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+	}
+
+	.seating-workspace .table-drawer {
+		position: static;
+		width: auto;
+		max-height: none;
+		margin-top: 12px;
 	}
 }

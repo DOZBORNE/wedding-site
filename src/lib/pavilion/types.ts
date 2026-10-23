@@ -48,6 +48,36 @@ export interface SavedPlan {
 	createdAt: string;
 }
 
+/** One table's seating in a chart. `capacity` overrides the plan's chair count. */
+export interface TableSeating {
+	name: string;
+	capacity: number | null;
+	guests: string[];
+}
+
+/** Who sits where, drawn against one saved plan. Keyed by the plan item's id. */
+export interface SeatingChart {
+	id: string;
+	name: string;
+	planId: string;
+	tables: Record<string, TableSeating>;
+	noChair: string[];
+	createdAt: string;
+	updatedAt: string;
+}
+
+/** An attending guest as the seating chart needs them — nothing contact-related. */
+export interface SeatGuest {
+	id: string;
+	partyId: string;
+	partyName: string;
+	name: string;
+	ageGroup: 'adult' | 'child' | 'baby';
+	dietary: string;
+	attending: boolean | null;
+	sortOrder: number;
+}
+
 export interface ConflictNotice {
 	locator: string;
 	message: string;

@@ -122,6 +122,19 @@ export const DELETE: RequestHandler = async ({ url, cookies }) => {
 	const id = url.searchParams.get('id') ?? '';
 	if (!id) return json({ error: 'Which plan?' }, { status: 400 });
 
+	// Seating charts cascade with their plan; never take them out by accident.
+	const { count, error: countError } = await db()
+		.from('seating_charts')
+		.select('id', { count: 'exact', head: true })
+		.eq('plan_id', id);
+	if (countError) return json({ error: 'Could not delete that plan.' }, { status: 500 });
+	if (count) {
+		return json(
+			{ error: `${count} seating ${count === 1 ? 'chart uses' : 'charts use'} this layout — delete ${count === 1 ? 'it' : 'them'} first.` },
+			{ status: 409 }
+		);
+	}
+
 	const { error } = await db().from('pavilion_plans').delete().eq('id', id);
 	if (error) return json({ error: 'Could not delete that plan.' }, { status: 500 });
 	return json({ ok: true });
