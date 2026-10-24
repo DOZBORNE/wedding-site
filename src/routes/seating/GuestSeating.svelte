@@ -312,6 +312,20 @@
 	/* ---- who is coming and where they sit ---------------------------------- */
 
 	const coming = $derived(guests.filter((guest) => guest.attending === true));
+	/** A party of one needs no "party" line under the name — it would just repeat it. */
+	const partySize = $derived(
+		guests.reduce((sizes, guest) => sizes.set(guest.partyId, (sizes.get(guest.partyId) ?? 0) + 1), new Map<string, number>())
+	);
+
+	/** The grey line under a name in the table popover: party, dietary note, and whether they're still coming. */
+	const rosterDetail = (guest: SeatGuest) =>
+		[
+			(partySize.get(guest.partyId) ?? 0) > 1 ? guest.partyName : '',
+			dietaryNote(guest),
+			guest.attending !== true ? 'not coming' : ''
+		]
+			.filter(Boolean)
+			.join(' · ');
 	const noChair = $derived(new Set(noChairIds));
 	const where = $derived(tableOfGuest(tables));
 	const numbered = $derived(numberedTables(items));
@@ -544,6 +558,54 @@
 			: [...noChairIds, guestId];
 		scheduleSave();
 	}
+
+	/* ---- popovers beside the table ----------------------------------------- */
+
+	const POPOVER_WIDTH = 320;
+	const PEEK_WIDTH = 240;
+	const POPOVER_GAP = 12;
+
+	let holder = $state<HTMLDivElement>();
+	let hoverTableId = $state<string | null>(null);
+	let drawerHeight = $state(0);
+	let peekHeight = $state(0);
+	let layoutTick = $state(0);
+
+	$effect(() => {
+		if (!holder) return;
+		const observer = new ResizeObserver(() => (layoutTick += 1));
+		observer.observe(holder);
+		return () => observer.disconnect();
+	});
+
+	/**
+	 * Beside the table rather than over it: to its right when there's room, else
+	 * its left, nudged up or down to stay inside the plan. The map keeps its size.
+	 */
+	function besideTable(tableId: string | null, width: number, height: number, _tick: number) {
+		if (!holder || !tableId) return null;
+		const node = holder.querySelector(`[data-table-id="${CSS.escape(tableId)}"]`);
+		if (!node) return null;
+		const frame = holder.getBoundingClientRect();
+		const table = node.getBoundingClientRect();
+		const x = table.left - frame.left + holder.scrollLeft;
+		const y = table.top - frame.top + holder.scrollTop;
+		const fitsRight = x + table.width + POPOVER_GAP + width <= holder.scrollLeft + holder.clientWidth - 8;
+		const left = fitsRight ? x + table.width + POPOVER_GAP : Math.max(8, x - POPOVER_GAP - width);
+		const lowest = holder.scrollTop + holder.clientHeight - height - 8;
+		const top = Math.max(holder.scrollTop + 8, Math.min(y + table.height / 2 - 60, lowest));
+		return { left, top };
+	}
+
+	const drawerAt = $derived(besideTable(selectedTableId, POPOVER_WIDTH, drawerHeight, layoutTick));
+	const peekTableId = $derived(hoverTableId && hoverTableId !== selectedTableId ? hoverTableId : null);
+	const peekAt = $derived(besideTable(peekTableId, PEEK_WIDTH, peekHeight, layoutTick));
+	const peekGuests = $derived(
+		(peekTableId ? (tables[peekTableId]?.guests ?? []) : [])
+			.map((id) => guestsById.get(id))
+			.filter((guest): guest is SeatGuest => Boolean(guest))
+	);
+	const peekStats = $derived(tableStats.find((table) => table.id === peekTableId) ?? null);
 
 	let swapWith = $state('');
 
@@ -902,7 +964,7 @@
 		</div>
 	</div>
 
-	<div class="plan-holder" class:with-drawer={selectedTableId !== null}>
+	<div class="plan-holder" bind:this={holder} onscroll={() => (layoutTick += 1)}>
 		{#if active && plan}
 			<SeatingCanvas
 				{items}
@@ -914,6 +976,7 @@
 				{focusPartyId}
 				placing={pending !== null}
 				onpick={pickTable}
+				onhover={(tableId) => (hoverTableId = tableId)}
 				ondropguests={(tableId, ids) => place(ids, tableId)}
 			/>
 		{:else if active}
@@ -922,7 +985,15 @@
 
 		{#if drawerItem && drawerSeating && selectedTableId}
 			{@const tableId = selectedTableId}
-			<div class="table-drawer" role="dialog" aria-label={tableTitle(tableId)}>
+			<div
+				class="table-drawer"
+				role="dialog"
+				aria-label={tableTitle(tableId)}
+				bind:offsetHeight={drawerHeight}
+				style:left={drawerAt ? `${drawerAt.left}px` : null}
+				style:top={drawerAt ? `${drawerAt.top}px` : null}
+				style:visibility={drawerAt ? null : 'hidden'}
+			>
 				<div class="drawer-head">
 					<span class="drawer-number">{numberOf.get(tableId)}</span>
 					<input
@@ -962,9 +1033,7 @@
 								<span class="party-swatch"></span>
 								<span class="roster-name">
 									{shortName(guest)}
-									<small>
-										{guest.partyName}{dietaryNote(guest) ? ` · ${dietaryNote(guest)}` : ''}{guest.attending !== true ? ' · not coming' : ''}
-									</small>
+									{#if rosterDetail(guest)}<small>{rosterDetail(guest)}</small>{/if}
 								</span>
 								<label class="lap-toggle" title="Sits on a lap and takes no chair">
 									<input type="checkbox" checked={noChair.has(guest.id)} onchange={() => toggleNoChair(guest.id)} />
@@ -991,6 +1060,38 @@
 					</select>
 					<button class="button" type="button" disabled={!swapWith} onclick={swapSelected}>Swap</button>
 				</div>
+			</div>
+		{/if}
+
+		{#if peekTableId && peekStats}
+			<div
+				class="table-peek"
+				aria-hidden="true"
+				bind:offsetHeight={peekHeight}
+				style:left={peekAt ? `${peekAt.left}px` : null}
+				style:top={peekAt ? `${peekAt.top}px` : null}
+				style:visibility={peekAt ? null : 'hidden'}
+			>
+				<div class="peek-head">
+					<span class="peek-title">{tableTitle(peekTableId)}</span>
+					<span class="peek-count" class:over={peekStats.filled > peekStats.capacity}>
+						{peekStats.filled}/{peekStats.capacity}
+					</span>
+				</div>
+				{#if peekGuests.length}
+					<ul class="peek-list">
+						{#each peekGuests as guest (guest.id)}
+							<li style:--hue={partyHue(guest.partyId)} class:gone={guest.attending !== true}>
+								<span class="party-swatch"></span>
+								<span class="peek-name">{shortName(guest)}</span>
+								{#if noChair.has(guest.id)}<span class="peek-tag">lap</span>
+								{:else if guest.ageGroup !== 'adult'}<span class="peek-tag">{guest.ageGroup}</span>{/if}
+							</li>
+						{/each}
+					</ul>
+				{:else}
+					<p class="peek-empty">Nobody seated yet</p>
+				{/if}
 			</div>
 		{/if}
 

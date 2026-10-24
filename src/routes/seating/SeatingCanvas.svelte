@@ -5,7 +5,6 @@
 	import {
 		GUEST_DRAG_TYPE,
 		capacityOf,
-		guestLabel,
 		isSeatable,
 		partyHue
 	} from '$lib/pavilion/seating';
@@ -23,6 +22,7 @@
 		focusPartyId: string | null;
 		placing: boolean;
 		onpick: (tableId: string | null) => void;
+		onhover: (tableId: string | null) => void;
 		ondropguests: (tableId: string, guestIds: string[]) => void;
 	}
 
@@ -36,6 +36,7 @@
 		focusPartyId,
 		placing,
 		onpick,
+		onhover,
 		ondropguests
 	}: Props = $props();
 
@@ -67,8 +68,7 @@
 				over: inChairs.length > capacity,
 				gone,
 				parties: new Set(seated.map((guest) => guest.partyId)),
-				chairs: chairs.map((chair, index) => ({ ...chair, guest: inChairs[index] ?? null, extra: index >= capacity })),
-				roster: seated.map(guestLabel).join('\n')
+				chairs: chairs.map((chair, index) => ({ ...chair, guest: inChairs[index] ?? null, extra: index >= capacity }))
 			};
 		})
 	);
@@ -143,6 +143,8 @@
 			tabindex="0"
 			aria-label="Table {table.number}{table.name ? `, ${table.name}` : ''}: {table.filled} of {table.capacity} chairs filled"
 			onclick={() => onpick(table.item.id)}
+			onpointerenter={() => onhover(table.item.id)}
+			onpointerleave={() => onhover(null)}
 			onkeydown={(event) => {
 				if (event.key === 'Enter' || event.key === ' ') {
 					event.preventDefault();
@@ -157,7 +159,6 @@
 			}}
 			ondrop={(event) => handleDrop(event, table.item.id)}
 		>
-			<title>{table.roster || 'Nobody seated yet'}</title>
 			<!-- One steady target per table, the size of the table with its chairs. -->
 			{#if table.item.shape === 'round'}
 				<circle class="seat-hit" r={radius + CHAIR_DEPTH_FEET} />
