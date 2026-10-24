@@ -20,6 +20,7 @@
 	} from '$lib/pavilion/seating';
 	import type { SavedPlan, SeatGuest, SeatingChart, TableSeating } from '$lib/pavilion/types';
 	import SeatingCanvas from './SeatingCanvas.svelte';
+	import SeatingPreview from './SeatingPreview.svelte';
 
 	interface Props {
 		plans: SavedPlan[];
@@ -374,6 +375,41 @@
 
 	let listView = $state<'unseated' | 'all'>('unseated');
 	let search = $state('');
+	let previewOpen = $state(false);
+
+	/*
+	 * The preview takes the whole screen, not just the window. Leaving full
+	 * screen (the browser eats the first Esc for that) closes it too, so one Esc
+	 * always gets you back — except while the print dialog is up.
+	 */
+	let printing = false;
+
+	function openPreview() {
+		previewOpen = true;
+		pending = null;
+		document.documentElement.requestFullscreen?.().catch(() => {
+			// Not allowed here (or an iPhone): the preview still fills the window.
+		});
+	}
+
+	function closePreview() {
+		previewOpen = false;
+		if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+	}
+
+	function printPreview() {
+		printing = true;
+		window.print();
+		printing = false;
+	}
+
+	onMount(() => {
+		const leftFullscreen = () => {
+			if (!document.fullscreenElement && previewOpen && !printing) previewOpen = false;
+		};
+		document.addEventListener('fullscreenchange', leftFullscreen);
+		return () => document.removeEventListener('fullscreenchange', leftFullscreen);
+	});
 	let searchInput = $state<HTMLInputElement>();
 	let focusPartyId = $state<string | null>(null);
 
@@ -674,14 +710,22 @@
 
 	function handleKeydown(event: KeyboardEvent) {
 		// ⌘F jumps to the guest search instead of the browser's find bar, from anywhere.
-		if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'f' && searchInput) {
+		if (!previewOpen && (event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'f' && searchInput) {
 			event.preventDefault();
 			searchInput.focus();
 			searchInput.select();
 			return;
 		}
 		const target = event.target as HTMLElement | null;
-		if (target?.matches('input, textarea, select')) return;
+		const typing = target?.matches('input, textarea, select') ?? false;
+		// P opens and closes the preview.
+		if (!typing && !event.metaKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase() === 'p' && active && plan) {
+			event.preventDefault();
+			if (previewOpen) closePreview();
+			else openPreview();
+			return;
+		}
+		if (previewOpen || typing) return;
 		if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'z') {
 			event.preventDefault();
 			undo();
@@ -987,6 +1031,11 @@
 		</div>
 		<div class="stage-actions">
 			<button class="button" type="button" onclick={undo} disabled={!history.length}>Undo</button>
+			{#if active && plan}
+				<button class="button primary preview-button" type="button" aria-keyshortcuts="P" onclick={openPreview}>
+					Preview <kbd>P</kbd>
+				</button>
+			{/if}
 		</div>
 	</div>
 
@@ -1124,3 +1173,18 @@
 		<div class="toast" class:visible={Boolean(toast)} role="status" aria-live="polite">{toast}</div>
 	</div>
 </main>
+
+{#if previewOpen && active && plan}
+	<SeatingPreview
+		chartName={chartName}
+		planName={plan.name}
+		{items}
+		{numbered}
+		{tables}
+		{guestsById}
+		{noChair}
+		unseated={coming.filter((guest) => !where.has(guest.id))}
+		onclose={closePreview}
+		onprint={printPreview}
+	/>
+{/if}
