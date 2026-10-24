@@ -1233,6 +1233,48 @@
 	background: var(--accent-wash);
 }
 
+.seating-workspace .list-controls {
+	position: sticky;
+	top: -22px;
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: -10px -6px 0;
+	padding: 10px 6px 8px;
+	background: var(--paper-raised);
+	box-shadow: 0 1px 0 var(--rule);
+}
+
+.seating-workspace .guest-list.drop-hover .list-controls {
+	background: var(--accent-wash);
+}
+
+.seating-workspace .search-field {
+	position: relative;
+	display: block;
+}
+
+.seating-workspace .search-field .field {
+	padding-right: 44px;
+}
+
+.seating-workspace .search-field kbd {
+	position: absolute;
+	top: 50%;
+	right: 9px;
+	transform: translateY(-50%);
+	padding: 0 4px;
+	border: 1px solid var(--rule);
+	border-bottom-width: 2px;
+	border-radius: 3px;
+	background: var(--paper-raised);
+	font-family: var(--font-drafting);
+	font-size: 10.5px;
+	color: var(--ink-faint);
+	pointer-events: none;
+}
+
 .seating-workspace .placing-note {
 	margin: 0;
 	padding: 8px 10px;
@@ -1764,6 +1806,10 @@
 
 	.seating-workspace .inspector {
 		bottom: 10px;
+	}
+
+	.seating-workspace .list-controls {
+		top: 0;
 	}
 
 	/* Keep the plan within a thumb's reach of the list when placing by tap. */

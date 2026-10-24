@@ -374,6 +374,7 @@
 
 	let listView = $state<'unseated' | 'all'>('unseated');
 	let search = $state('');
+	let searchInput = $state<HTMLInputElement>();
 	let focusPartyId = $state<string | null>(null);
 
 	const parties = $derived.by(() => {
@@ -672,6 +673,13 @@
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
+		// ⌘F jumps to the guest search instead of the browser's find bar, from anywhere.
+		if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'f' && searchInput) {
+			event.preventDefault();
+			searchInput.focus();
+			searchInput.select();
+			return;
+		}
 		const target = event.target as HTMLElement | null;
 		if (target?.matches('input, textarea, select')) return;
 		if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'z') {
@@ -840,6 +848,8 @@
 				}}
 				ondrop={dropOnList}
 			>
+				<!-- Stays pinned while the party list scrolls under it. -->
+				<div class="list-controls">
 				<div class="segmented" role="tablist" aria-label="Which guests to list">
 					<button type="button" role="tab" aria-selected={listView === 'unseated'} class:active={listView === 'unseated'} onclick={() => (listView = 'unseated')}>
 						Unseated <span class="count">{unseatedCount}</span>
@@ -848,18 +858,34 @@
 						Everyone <span class="count">{coming.length}</span>
 					</button>
 				</div>
-				<input class="field" type="search" placeholder="Find a guest or party" bind:value={search} />
-				{#if listView === 'unseated'}
-					<div class="button-row">
-						<button class="button" type="button" disabled={!unseatedCount} onclick={runAutoFill}>Auto-seat the rest</button>
-					</div>
-				{/if}
-
+				<label class="search-field">
+					<input
+						class="field"
+						type="search"
+						placeholder="Find a guest or party"
+						aria-keyshortcuts="Meta+F"
+						bind:this={searchInput}
+						bind:value={search}
+						onkeydown={(event) => {
+							if (event.key !== 'Escape') return;
+							search = '';
+							event.currentTarget.blur();
+						}}
+					/>
+					{#if !search}<kbd>⌘F</kbd>{/if}
+				</label>
 				{#if pending}
 					<p class="placing-note">
 						Placing <b>{pending.label}</b> — click a table on the plan.
 						<button type="button" class="link" onclick={() => (pending = null)}>Cancel</button>
 					</p>
+				{/if}
+				</div>
+
+				{#if listView === 'unseated'}
+					<div class="button-row">
+						<button class="button" type="button" disabled={!unseatedCount} onclick={runAutoFill}>Auto-seat the rest</button>
+					</div>
 				{/if}
 
 				<div class="party-list">
