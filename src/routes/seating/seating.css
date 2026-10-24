@@ -1382,9 +1382,18 @@
 }
 
 .seating-workspace .member .at {
+	padding: 0 4px;
+	border-radius: 3px;
+	background: var(--accent-wash);
 	font-family: var(--font-drafting);
 	font-size: 10px;
 	color: var(--accent-deep);
+}
+
+.seating-workspace .search-note {
+	margin: 0;
+	font-size: 11.5px;
+	color: var(--ink-faint);
 }
 
 .seating-workspace .split-list {

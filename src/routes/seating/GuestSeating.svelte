@@ -413,9 +413,13 @@
 	let searchInput = $state<HTMLInputElement>();
 	let focusPartyId = $state<string | null>(null);
 
+	/** A search looks through everyone coming, seated or not, so a seated guest can be found and moved. */
+	const searching = $derived(search.trim().length > 0);
+
 	const parties = $derived.by(() => {
 		const query = search.trim().toLowerCase();
-		const pool = listView === 'unseated' ? coming.filter((guest) => !where.has(guest.id)) : coming;
+		const pool =
+			listView === 'unseated' && !query ? coming.filter((guest) => !where.has(guest.id)) : coming;
 		return groupByParty(pool)
 			.filter(
 				(party) =>
@@ -918,6 +922,9 @@
 					/>
 					{#if !search}<kbd>⌘F</kbd>{/if}
 				</label>
+				{#if searching && listView === 'unseated'}
+					<p class="search-note">Searching everyone, seated or not. Click or drag a name to move them.</p>
+				{/if}
 				{#if pending}
 					<p class="placing-note">
 						Placing <b>{pending.label}</b> — click a table on the plan.
@@ -957,7 +964,8 @@
 								<span class="party-name">{party.partyName}</span>
 								<span class="party-need">{need}{need !== party.guests.length ? `+${party.guests.length - need}` : ''}</span>
 							</div>
-							{#if party.guests.length > 1 || listView === 'all'}
+							<!-- Names always show for a party of several: two parties can share a name like "The Connallys". -->
+							{#if (partySize.get(party.partyId) ?? 0) > 1 || listView === 'all' || searching}
 								<div class="party-members">
 									{#each party.guests as guest (guest.id)}
 										<div
@@ -974,8 +982,8 @@
 										>
 											{shortName(guest)}
 											{#if guest.ageGroup !== 'adult'}<span class="age">{guest.ageGroup}</span>{/if}
-											{#if listView === 'all' && where.has(guest.id)}
-												<span class="at">{numberOf.get(where.get(guest.id)!)}</span>
+											{#if where.has(guest.id)}
+												<span class="at" title="Seated at {tableTitle(where.get(guest.id)!)}">T{numberOf.get(where.get(guest.id)!)}</span>
 											{/if}
 										</div>
 									{/each}
