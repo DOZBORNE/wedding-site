@@ -137,10 +137,11 @@
 		{#if card.guests.length}
 			<ul>
 				{#each card.guests as guest (guest.id)}
-					<li style:--hue={partyHue(guest.partyId)} class:gone={guest.attending !== true}>
+					<li style:--hue={partyHue(guest.partyId)} class:gone={guest.attending === false} class:awaiting={guest.attending === null}>
 						<span class="party-swatch"></span>
 						<span class="preview-name">{shortName(guest)}</span>
-						{#if noChair.has(guest.id)}<span class="preview-tag">lap</span>{/if}
+						{#if guest.attending === null}<span class="preview-tag">no reply yet</span>
+						{:else if noChair.has(guest.id)}<span class="preview-tag">lap</span>{/if}
 					</li>
 				{/each}
 			</ul>

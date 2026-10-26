@@ -1116,6 +1116,13 @@
 	box-shadow: 0 1px 2px rgb(28 38 32 / 14%);
 }
 
+/* Room for a third tab (No reply) without any label wrapping. */
+.seating-workspace .segmented button {
+	padding: 6px 4px;
+	font-size: 12px;
+	white-space: nowrap;
+}
+
 .seating-workspace .segmented .count {
 	margin-left: 3px;
 	font-family: var(--font-drafting);
@@ -1784,6 +1791,42 @@
 	.seating-workspace .seat-table {
 		transition: none;
 	}
+}
+
+/* ---------- Pencilled in: invited, no reply yet ---------- */
+
+/*
+ * One muted treatment everywhere an unanswered guest appears. It's all keyed
+ * off attending === null, so a yes turns them full colour with no other change.
+ */
+.seating-workspace .member.awaiting,
+.seating-workspace .party.awaiting .party-name {
+	opacity: 0.6;
+}
+
+.seating-workspace .member.awaiting {
+	border-style: dashed;
+}
+
+.seating-workspace .member .no-reply {
+	font-size: 10px;
+	color: var(--ink-faint);
+}
+
+.seating-workspace .seat-roster li.awaiting .roster-name,
+.seating-workspace .seat-roster li.awaiting .party-swatch,
+.seating-workspace .peek-list li.awaiting .peek-name,
+.seating-workspace .peek-list li.awaiting .party-swatch,
+.seating-workspace .preview-card li.awaiting .preview-name,
+.seating-workspace .preview-card li.awaiting .party-swatch {
+	opacity: 0.55;
+}
+
+.seating-workspace .seat-chair.taken.awaiting {
+	fill-opacity: 0.35;
+	stroke: var(--party);
+	stroke-width: 0.16;
+	stroke-dasharray: 0.35 0.25;
 }
 
 /* ---------- Preview: everyone at once, laid out like the room ---------- */

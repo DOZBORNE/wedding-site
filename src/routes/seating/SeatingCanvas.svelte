@@ -57,7 +57,7 @@
 			const onLaps = seated.length - inChairs.length;
 			// Draw every booked chair, even past capacity, so an overfull table shows it.
 			const chairs = chairPlacements({ ...item, seats: Math.max(capacity, inChairs.length) });
-			const gone = seated.some((guest) => guest.attending !== true);
+			const gone = seated.some((guest) => guest.attending === false);
 			return {
 				item,
 				number,
@@ -186,6 +186,7 @@
 				<rect
 					class="seat-chair"
 					class:taken={chair.guest !== null}
+					class:awaiting={chair.guest?.attending === null}
 					class:extra={chair.extra}
 					class:focus={chair.guest !== null && chair.guest.partyId === focusPartyId}
 					style:--hue={chair.guest ? partyHue(chair.guest.partyId) : null}

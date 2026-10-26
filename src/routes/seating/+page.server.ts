@@ -10,7 +10,8 @@ import { toAgeGroup } from '$lib/types';
  * The planner is a working tool rather than a guest page: no invite code, no
  * session. Anyone with the link reads and saves; only an admin can delete.
  * The seating side sends guest names and dietary notes only — never contact
- * details — and only for people who are coming, or who a chart still seats.
+ * details — and only for people who are coming, who haven't replied yet (so a
+ * late invitee can be pencilled in), or who a chart still seats.
  */
 export const load: PageServerLoad = async ({ cookies, setHeaders }) => {
 	setHeaders({ 'cache-control': 'no-store' });
@@ -44,7 +45,7 @@ export const load: PageServerLoad = async ({ cookies, setHeaders }) => {
 		charts.flatMap((chart) => Object.values(chart.tables).flatMap((table) => table.guests))
 	);
 	const guests: SeatGuest[] = (guestsRes.data ?? [])
-		.filter((row) => row.attending === true || seatedSomewhere.has(row.id as string))
+		.filter((row) => row.attending !== false || seatedSomewhere.has(row.id as string))
 		.map((row) => {
 			const party = row.wed_parties as unknown as { display_name: string } | null;
 			return {

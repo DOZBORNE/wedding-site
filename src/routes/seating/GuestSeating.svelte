@@ -21,6 +21,7 @@
 	import type { SavedPlan, SeatGuest, SeatingChart, TableSeating } from '$lib/pavilion/types';
 	import SeatingCanvas from './SeatingCanvas.svelte';
 	import SeatingPreview from './SeatingPreview.svelte';
+	import { invalidateAll } from '$app/navigation';
 
 	interface Props {
 		plans: SavedPlan[];
@@ -132,11 +133,19 @@
 		loadChart(charts.find((chart) => chart.id === remembered) ?? charts[0] ?? null);
 		refreshActive();
 
+		// Someone may have RSVP'd since: reload the guest list when the tab comes
+		// back, so a pencilled-in guest turns full colour without a refresh.
+		const backAgain = () => {
+			if (document.visibilityState === 'visible') invalidateAll();
+		};
+		document.addEventListener('visibilitychange', backAgain);
+
 		const warn = (event: BeforeUnloadEvent) => {
 			if (outbox.size || sending || saveState === 'conflict' || saveState === 'error') event.preventDefault();
 		};
 		window.addEventListener('beforeunload', warn);
 		return () => {
+			document.removeEventListener('visibilitychange', backAgain);
 			window.removeEventListener('beforeunload', warn);
 			// Leaving for the Tables view: send anything still waiting.
 			flush();
@@ -313,6 +322,8 @@
 	/* ---- who is coming and where they sit ---------------------------------- */
 
 	const coming = $derived(guests.filter((guest) => guest.attending === true));
+	/** Invited but no reply yet. They can be pencilled in, and show muted until they say yes. */
+	const awaiting = $derived(guests.filter((guest) => guest.attending === null));
 	/** A party of one needs no "party" line under the name — it would just repeat it. */
 	const partySize = $derived(
 		guests.reduce((sizes, guest) => sizes.set(guest.partyId, (sizes.get(guest.partyId) ?? 0) + 1), new Map<string, number>())
@@ -323,7 +334,7 @@
 		[
 			(partySize.get(guest.partyId) ?? 0) > 1 ? guest.partyName : '',
 			dietaryNote(guest),
-			guest.attending !== true ? 'not coming' : ''
+			guest.attending === false ? 'not coming' : guest.attending === null ? 'no reply yet' : ''
 		]
 			.filter(Boolean)
 			.join(' · ');
@@ -355,11 +366,11 @@
 	);
 	const overTables = $derived(tableStats.filter((table) => table.filled > table.capacity));
 
-	/** People a chart still seats who have since said they're not coming. */
+	/** People a chart still seats who have since said they're not coming. (No reply yet isn't a problem.) */
 	const noLongerComing = $derived(
 		[...where.keys()]
 			.map((id) => guestsById.get(id))
-			.filter((guest): guest is SeatGuest => Boolean(guest) && guest!.attending !== true)
+			.filter((guest): guest is SeatGuest => Boolean(guest) && guest!.attending === false)
 	);
 
 	const splitParties = $derived(
@@ -373,7 +384,12 @@
 
 	/* ---- the party list ---------------------------------------------------- */
 
-	let listView = $state<'unseated' | 'all'>('unseated');
+	let listView = $state<'unseated' | 'all' | 'awaiting'>('unseated');
+
+	// The No reply tab goes away once everyone has answered.
+	$effect(() => {
+		if (listView === 'awaiting' && !awaiting.length) listView = 'unseated';
+	});
 	let search = $state('');
 	let previewOpen = $state(false);
 
@@ -418,8 +434,13 @@
 
 	const parties = $derived.by(() => {
 		const query = search.trim().toLowerCase();
-		const pool =
-			listView === 'unseated' && !query ? coming.filter((guest) => !where.has(guest.id)) : coming;
+		const pool = query
+			? guests.filter((guest) => guest.attending !== false)
+			: listView === 'unseated'
+				? coming.filter((guest) => !where.has(guest.id))
+				: listView === 'awaiting'
+					? awaiting
+					: coming;
 		return groupByParty(pool)
 			.filter(
 				(party) =>
@@ -875,7 +896,7 @@
 								<button type="button" class="link" onclick={() => (selectedTableId = where.get(guest.id) ?? null)}>
 									{tableTitle(where.get(guest.id) ?? '')}
 								</button>
-								<span>{shortName(guest)} {guest.attending === false ? 'is no longer coming' : "hasn't answered"}</span>
+								<span>{shortName(guest)} is no longer coming</span>
 							</li>
 						{/each}
 					</ul>
@@ -905,6 +926,11 @@
 					<button type="button" role="tab" aria-selected={listView === 'all'} class:active={listView === 'all'} onclick={() => (listView = 'all')}>
 						Everyone <span class="count">{coming.length}</span>
 					</button>
+					{#if awaiting.length}
+						<button type="button" role="tab" aria-selected={listView === 'awaiting'} class:active={listView === 'awaiting'} onclick={() => (listView = 'awaiting')}>
+							No reply <span class="count">{awaiting.length}</span>
+						</button>
+					{/if}
 				</div>
 				<label class="search-field">
 					<input
@@ -946,6 +972,7 @@
 						<div
 							class="party"
 							class:pending={pending?.guestIds.join() === ids.join()}
+							class:awaiting={party.guests.every((guest) => guest.attending === null)}
 							style:--hue={partyHue(party.partyId)}
 							draggable="true"
 							role="group"
@@ -965,7 +992,7 @@
 								<span class="party-need">{need}{need !== party.guests.length ? `+${party.guests.length - need}` : ''}</span>
 							</div>
 							<!-- Names always show for a party of several: two parties can share a name like "The Connallys". -->
-							{#if (partySize.get(party.partyId) ?? 0) > 1 || listView === 'all' || searching}
+							{#if (partySize.get(party.partyId) ?? 0) > 1 || listView !== 'unseated' || searching}
 								<div class="party-members">
 									{#each party.guests as guest (guest.id)}
 										<div
@@ -974,13 +1001,15 @@
 											class="member"
 											class:pending={pending?.guestIds.length === 1 && pending.guestIds[0] === guest.id}
 											class:lap={noChair.has(guest.id)}
+											class:awaiting={guest.attending === null}
 											draggable="true"
 											ondragstart={(event) => startDrag(event, [guest.id])}
 											onclick={() => pickGuest(guest)}
 											onkeydown={(event) => activateOnKey(event, () => pickGuest(guest))}
-											title={noChair.has(guest.id) ? 'No chair — on a lap' : undefined}
+											title={guest.attending === null ? "Hasn't replied yet" : noChair.has(guest.id) ? 'No chair — on a lap' : undefined}
 										>
 											{shortName(guest)}
+											{#if guest.attending === null}<span class="no-reply">no reply</span>{/if}
 											{#if guest.ageGroup !== 'adult'}<span class="age">{guest.ageGroup}</span>{/if}
 											{#if where.has(guest.id)}
 												<span class="at" title="Seated at {tableTitle(where.get(guest.id)!)}">T{numberOf.get(where.get(guest.id)!)}</span>
@@ -992,7 +1021,13 @@
 						</div>
 					{:else}
 						<p class="empty-note">
-							{search ? 'Nobody by that name.' : listView === 'unseated' ? 'Everyone coming has a seat.' : 'Nobody has said yes yet.'}
+							{search
+								? 'Nobody by that name.'
+								: listView === 'unseated'
+									? 'Everyone coming has a seat.'
+									: listView === 'awaiting'
+										? 'Everyone has replied.'
+										: 'Nobody has said yes yet.'}
 						</p>
 					{/each}
 				</div>
@@ -1109,7 +1144,8 @@
 						{#each drawerGuests as guest, index (guest.id)}
 							<li
 								style:--hue={partyHue(guest.partyId)}
-								class:gone={guest.attending !== true}
+								class:gone={guest.attending === false}
+								class:awaiting={guest.attending === null}
 								draggable="true"
 								ondragstart={(event) => startDrag(event, [guest.id])}
 							>
@@ -1164,10 +1200,11 @@
 				{#if peekGuests.length}
 					<ul class="peek-list">
 						{#each peekGuests as guest (guest.id)}
-							<li style:--hue={partyHue(guest.partyId)} class:gone={guest.attending !== true}>
+							<li style:--hue={partyHue(guest.partyId)} class:gone={guest.attending === false} class:awaiting={guest.attending === null}>
 								<span class="party-swatch"></span>
 								<span class="peek-name">{shortName(guest)}</span>
-								{#if noChair.has(guest.id)}<span class="peek-tag">lap</span>
+								{#if guest.attending === null}<span class="peek-tag">no reply yet</span>
+								{:else if noChair.has(guest.id)}<span class="peek-tag">lap</span>
 								{:else if guest.ageGroup !== 'adult'}<span class="peek-tag">{guest.ageGroup}</span>{/if}
 							</li>
 						{/each}
