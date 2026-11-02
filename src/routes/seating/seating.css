@@ -1679,6 +1679,17 @@
 	font-size: 14px;
 	font-weight: 500;
 	color: var(--accent-deep);
+	background: transparent;
+	text-align: center;
+	padding: 0;
+	cursor: text;
+}
+
+.seating-workspace .drawer-number:hover,
+.seating-workspace .drawer-number:focus {
+	background: var(--paper-raised);
+	outline: none;
+	border-width: 2px;
 }
 
 .seating-workspace .drawer-head .field {
@@ -1696,6 +1707,11 @@
 .seating-workspace .drawer-note {
 	font-size: 11.5px;
 	color: var(--ink-faint);
+}
+
+.seating-workspace .drawer-note.clash {
+	color: var(--alert);
+	font-weight: 600;
 }
 
 .seating-workspace .seat-roster {

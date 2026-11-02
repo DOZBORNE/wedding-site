@@ -51,6 +51,8 @@ export interface SavedPlan {
 /** One table's seating in a chart. `capacity` overrides the plan's chair count. */
 export interface TableSeating {
 	name: string;
+	/** The number printed on the table card; null means "work it out from where the table sits". */
+	number?: number | null;
 	capacity: number | null;
 	guests: string[];
 }

@@ -3,6 +3,7 @@
 	import {
 		GUEST_DRAG_TYPE,
 		MAX_TABLE_CAPACITY,
+		MAX_TABLE_NUMBER,
 		NO_CHAIR_BY_DEFAULT,
 		autoFill,
 		blankTable,
@@ -340,7 +341,7 @@
 			.join(' · ');
 	const noChair = $derived(new Set(noChairIds));
 	const where = $derived(tableOfGuest(tables));
-	const numbered = $derived(numberedTables(items));
+	const numbered = $derived(numberedTables(items, tables));
 	const numberOf = $derived(new Map(numbered.map(({ item, number }) => [item.id, number])));
 
 	const tableTitle = (tableId: string) => {
@@ -595,6 +596,24 @@
 		if (record) remember();
 		tables = { ...tables, [tableId]: { ...(tables[tableId] ?? blankTable()), ...patch } };
 		scheduleSave();
+	}
+
+	/** Other tables showing the same number as the open one. */
+	const drawerClashes = $derived.by(() => {
+		const tableId = selectedTableId;
+		if (!tableId) return [];
+		return numbered.filter(({ item, number }) => item.id !== tableId && number === numberOf.get(tableId));
+	});
+
+	function setNumber(tableId: string, input: HTMLInputElement) {
+		const typed = input.value.trim();
+		const parsed = Number(typed);
+		if (typed === '') {
+			patchTable(tableId, { number: null });
+		} else if (Number.isInteger(parsed) && parsed >= 1 && parsed <= MAX_TABLE_NUMBER) {
+			patchTable(tableId, { number: parsed });
+		}
+		input.value = String(numberOf.get(tableId) ?? '');
 	}
 
 	function setCapacity(next: number) {
@@ -1113,7 +1132,18 @@
 				style:visibility={drawerAt ? null : 'hidden'}
 			>
 				<div class="drawer-head">
-					<span class="drawer-number">{numberOf.get(tableId)}</span>
+					<input
+						class="drawer-number"
+						type="text"
+						inputmode="numeric"
+						maxlength="3"
+						aria-label="Table number"
+						title="Table number — type a new one, or clear it to number by position"
+						value={numberOf.get(tableId)}
+						onfocus={(event) => event.currentTarget.select()}
+						onchange={(event) => setNumber(tableId, event.currentTarget)}
+						onkeydown={(event) => event.key === 'Enter' && event.currentTarget.blur()}
+					/>
 					<input
 						class="field"
 						type="text"
@@ -1136,6 +1166,11 @@
 					</div>
 					{#if drawerCapacity !== drawerItem.seats}
 						<span class="drawer-note">layout has {drawerItem.seats}</span>
+					{/if}
+					{#if drawerClashes.length}
+						<span class="drawer-note clash">
+							{drawerClashes.length === 1 ? 'Another table is' : `${drawerClashes.length} other tables are`} also #{numberOf.get(tableId)}
+						</span>
 					{/if}
 				</div>
 

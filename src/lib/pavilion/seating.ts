@@ -16,26 +16,43 @@ export function isSeatable(item: PlanItem): boolean {
 
 const SURFACE_ORDER: Record<Surface, number> = { pavilion: 0, patio: 1, grounds: 2 };
 
+export const MAX_TABLE_NUMBER = 999;
+
 /**
- * Seatable tables in reading order, with the number a guest would see on the
- * table card: the pavilion first, row by row from the kitchen side, then the
- * patio top to bottom, then anything out on the grounds. Rows are 10 ft bands,
- * which matches the column bays closely enough that a rank reads as one row.
+ * Seatable tables with the number a guest would see on the table card, lowest
+ * first. A number typed into a table's drawer wins; every other table takes the
+ * lowest number nobody has claimed, in reading order: the pavilion first, row
+ * by row from the kitchen side, then the patio top to bottom, then anything out
+ * on the grounds. Rows are 10 ft bands, which matches the column bays closely
+ * enough that a rank reads as one row.
  */
-export function numberedTables(items: PlanItem[]): { item: PlanItem; number: number }[] {
+export function numberedTables(
+	items: PlanItem[],
+	tables: Record<string, TableSeating> = {}
+): { item: PlanItem; number: number }[] {
 	const surface = (item: PlanItem) => SURFACE_ORDER[surfaceAt(item.x, item.y)];
-	return items
+	const ordered = items
 		.filter(isSeatable)
 		.sort(
 			(a, b) =>
 				surface(a) - surface(b) ||
 				(surface(a) === SURFACE_ORDER.pavilion ? Math.round(a.y / 10) - Math.round(b.y / 10) || a.x - b.x : a.y - b.y)
-		)
-		.map((item, index) => ({ item, number: index + 1 }));
+		);
+	const chosen = (item: PlanItem) => tables[item.id]?.number ?? null;
+	const taken = new Set(ordered.map(chosen).filter((number) => number !== null));
+	let next = 1;
+	return ordered
+		.map((item) => {
+			const number = chosen(item);
+			if (number !== null) return { item, number };
+			while (taken.has(next)) next++;
+			return { item, number: next++ };
+		})
+		.sort((a, b) => a.number - b.number);
 }
 
 export function blankTable(): TableSeating {
-	return { name: '', capacity: null, guests: [] };
+	return { name: '', number: null, capacity: null, guests: [] };
 }
 
 export function capacityOf(item: PlanItem, seating: TableSeating | undefined): number {
@@ -78,7 +95,7 @@ export function seatGuests(
 	return next;
 }
 
-/** Trade everyone (and the table's name) between two tables. Capacities stay with the furniture. */
+/** Trade everyone (and the table's name) between two tables. Numbers and capacities stay with the furniture. */
 export function swapTables(
 	tables: Record<string, TableSeating>,
 	firstId: string,
@@ -197,8 +214,13 @@ export function cleanTables(raw: unknown): Record<string, TableSeating> {
 			seen.add(id);
 			guests.push(id);
 		}
+		const number =
+			typeof source.number === 'number' && Number.isInteger(source.number)
+				? Math.min(MAX_TABLE_NUMBER, Math.max(1, source.number))
+				: null;
 		tables[tableId] = {
 			name: typeof source.name === 'string' ? source.name.trim().slice(0, 40) : '',
+			number,
 			capacity,
 			guests
 		};
